@@ -392,7 +392,7 @@ cd OCI-O11y/lab</code></pre>
           <ol>
             <li>Calls <code>send-oci-metrics.py</code> with OCC-specific options:</li>
             <li><code>--fixtures fixtures/oci-occ-dashboard-metrics.jsonl</code> — <code>oci_computeagent</code> metrics with dashboard dimensions (<code>resourceDisplayName</code>, <code>shape</code>, etc.).</li>
-            <li><code>--batch-all</code> — sends every fixture line in one POST per iteration (~24 gauge points).</li>
+            <li><code>--batch-all</code> — sends every fixture line in one POST per iteration (~30 gauge points).</li>
             <li><code>--increment-counters</code> — multiplies disk/network byte counters each loop so Signalflow <code>.delta()</code> charts show non-zero rates.</li>
             <li><code>--loop 20 --interval 30</code> — repeats every 30 seconds for ~10 minutes of time-series data.</li>
             <li>CPU/memory gauges get small variations; counters grow monotonically.</li>
@@ -425,8 +425,20 @@ cd OCI-O11y/lab</code></pre>
           <p class="callout__title">Import dashboards</p>
           <div class="callout__body">
             <p>Dashboards → Create dashboard group → Import JSON → select <code>dashboards/dashboard_group_OCC.json</code> from the repo clone. Set time range to <strong>Last 15 minutes</strong> while the fill script runs.</p>
+            <p>On the <strong>OCC Instance</strong> dashboard, choose an instance from the <code>oci_dim_resourceId</code> variable (for example <code>ocid1.instance.oc1.iad.workshop-2</code>).</p>
           </div>
         </div>
+
+        <h3>Example dashboards (after fill script)</h3>
+        <figure class="screenshot">
+          <img class="screenshot__img" src="images/occ-instances-dashboard.png" alt="OCC Instances dashboard showing aggregate CPU, memory, disk, and network charts populated with lab metrics" width="1440" height="900" loading="lazy" />
+          <figcaption class="screenshot__caption"><strong>OCC Instances</strong> — aggregate view after <code>./scripts/fill-occ-dashboard.sh 20 30</code>. CPU %, Memory Used %, disk, and network charts populate; list widgets may stay empty until enough dimensional data arrives.</figcaption>
+        </figure>
+        <figure class="screenshot">
+          <img class="screenshot__img" src="images/occ-instance-dashboard.png" alt="OCC Instance dashboard filtered to workshop-vm-2 with memory, disk, and network charts populated" width="1440" height="900" loading="lazy" />
+          <figcaption class="screenshot__caption"><strong>OCC Instance</strong> — per-instance drill-down with <code>oci_dim_resourceId</code> set to <code>ocid1.instance.oc1.iad.workshop-2</code>. Top-row <em>CPU Used %</em> and <em>Memory Used %</em> single-value tiles need the updated dashboard JSON from this repo (re-import if you imported an earlier version).</figcaption>
+        </figure>
+
         <p>Full reference: <code>lab/OCC_DASHBOARD.md</code></p>
       </section>
 
@@ -620,6 +632,10 @@ docker compose restart otel-collector</code></pre>
         <details>
           <summary>Metrics in Finder but OCC dashboards empty</summary>
           <p>Run <code>./scripts/fill-occ-dashboard.sh 20 30</code> (needs <code>oci_computeagent</code> fixtures). Import <code>dashboards/dashboard_group_OCC.json</code>. Set time range to Last 15 minutes.</p>
+        </details>
+        <details>
+          <summary>OCC Instance: CPU Used % / Memory Used % tiles empty</summary>
+          <p>Scroll to the top row on the <strong>OCC Instance</strong> dashboard — the single-value tiles sit above the time-series charts. Re-import the latest <code>dashboards/dashboard_group_OCC.json</code> from this repo (the lab version uses <code>mean(over='5m')</code> and an <code>oci_namespace</code> filter on memory). Select an instance in the <code>oci_dim_resourceId</code> variable, keep the time range at <strong>Last 15 minutes</strong>, and run <code>./scripts/fill-occ-dashboard.sh 20 30</code> again.</p>
         </details>
         <details>
           <summary>No logs in Log Observer</summary>

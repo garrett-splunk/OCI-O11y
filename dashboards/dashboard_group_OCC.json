@@ -2285,7 +2285,7 @@
           "unitPrefix": "Metric"
         },
         "packageSpecifications": "",
-        "programText": "A = data('MemoryUtilization').publish(label='A')",
+        "programText": "A = data('MemoryUtilization', filter=filter('oci_namespace', 'oci_computeagent')).publish(label='A')",
         "relatedDetectorIds": [],
         "tags": null
       }
@@ -2846,7 +2846,7 @@
           },
           "publishLabelOptions": [
             {
-              "displayName": "min",
+              "displayName": "mean",
               "label": "A",
               "paletteIndex": 1,
               "plotType": null,
@@ -2869,7 +2869,7 @@
           "unitPrefix": "Metric"
         },
         "packageSpecifications": "",
-        "programText": "A = data('CpuUtilization', filter=filter('oci_namespace', 'oci_computeagent')).min().publish(label='A')",
+        "programText": "A = data('CpuUtilization', filter=filter('oci_namespace', 'oci_computeagent')).mean(over='5m').publish(label='A')",
         "relatedDetectorIds": [],
         "tags": null
       }
@@ -2897,13 +2897,13 @@
           },
           "programOptions": {
             "disableSampling": false,
-            "maxDelay": 0,
+            "maxDelay": null,
             "minimumResolution": 0,
             "timezone": null
           },
           "publishLabelOptions": [
             {
-              "displayName": "min",
+              "displayName": "mean",
               "label": "A",
               "paletteIndex": 1,
               "plotType": null,
@@ -2926,7 +2926,7 @@
           "unitPrefix": "Metric"
         },
         "packageSpecifications": "",
-        "programText": "A = data('MemoryUtilization').min().publish(label='A')",
+        "programText": "A = data('MemoryUtilization', filter=filter('oci_namespace', 'oci_computeagent')).mean(over='5m').publish(label='A')",
         "relatedDetectorIds": [],
         "tags": null
       }

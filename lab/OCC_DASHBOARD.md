@@ -98,7 +98,26 @@ Metric Finder examples:
 | Active Hosts | count by `oci_dim_resourceId` |
 | Disk Iops | `DiskIopsRead` / `DiskIopsWritten` with `.delta()` |
 | Network Bytes In/Out | `NetworksBytesIn` / `NetworksBytesOut` with `.delta()` |
-| Memory Used % | `MemoryUtilization` |
+| Memory Used % | `MemoryUtilization` with `oci_namespace` filter |
 | CPU % Trend | raw `CpuUtilization` time series |
+| OCC Instance top tiles | `mean(over='5m')` on `CpuUtilization` / `MemoryUtilization` (single-value row) |
 
 Full programs are embedded in `dashboards/dashboard_group_OCC.json`.
+
+## Example dashboards
+
+After `./scripts/fill-occ-dashboard.sh 20 30`, you should see data on both dashboards:
+
+- **OCC Instances** — aggregate CPU %, Memory Used %, disk, and network charts
+- **OCC Instance** — pick an instance from the `oci_dim_resourceId` variable; disk and network charts populate immediately; top-row CPU/Memory single-value tiles require the dashboard JSON from this repo
+
+Screenshots are in `images/occ-instances-dashboard.png` and `images/occ-instance-dashboard.png` (also on the workshop site).
+
+## Troubleshooting: OCC Instance single-value tiles
+
+If **CPU Used %** or **Memory Used %** in the top row show no data while lower charts (Memory Used % time series, Disk Iops) work:
+
+1. **Re-import** `dashboards/dashboard_group_OCC.json` — older exports used `.min()` without a namespace filter on memory and `maxDelay: 0`, which often leaves single-value tiles blank with sparse lab data.
+2. **Select an instance** in the required `oci_dim_resourceId` dashboard variable (e.g. `ocid1.instance.oc1.iad.workshop-2`).
+3. **Keep sending data** with `./scripts/fill-occ-dashboard.sh 20 30` and set the dashboard time picker to **Last 15 minutes**.
+4. **Scroll to the top row** — the single-value tiles are easy to miss above the larger charts.
