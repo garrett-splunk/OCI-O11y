@@ -1,4 +1,4 @@
-# OCI Metrics → Splunk Observability Cloud Workshop
+# OCI Metrics → Splunk O11y Workshop
 
 **Primary path:** Connector Hub → OCI Function → `/v2/datapoint` → Metric Finder & dashboards  
 **Optional:** Logs via Streaming + OTel Collector (requires Splunk Cloud/Enterprise for Log Observer)
@@ -28,11 +28,11 @@ Import `dashboards/dashboard_group_OCC.json`, then run `./scripts/fill-occ-dashb
 
 See `lab/OCC_DASHBOARD.md` for OCI integration → Signalflow mapping.
 
-**Splunk filter:** `deployment.environment.name:oci-connector-lab`
+**Splunk O11y filter:** `deployment.environment.name:oci-connector-lab`
 
 ## Optional — logs path
 
-Requires **Docker** and a Splunk org with **Log Observer** linked to Splunk Cloud or Enterprise.
+Requires **Docker** and a Splunk O11y org with **Log Observer** linked to Splunk Cloud or Enterprise.
 
 ```bash
 cd lab
@@ -51,7 +51,7 @@ See `lab/OCI_OPTIONAL.md`.
 | `lab/scripts/metrics-lab.sh` | Metrics-only lab (no Docker) |
 | `lab/scripts/fill-occ-dashboard.sh` | Populate OCC dashboard charts |
 | `lab/functions/oci-metrics-forwarder/` | OCI Function for Monitoring metrics |
-| `lab/lib/oci_metrics_transform.py` | Shared OCI → Splunk gauge mapping |
+| `lab/lib/oci_metrics_transform.py` | Shared OCI → Splunk O11y gauge mapping |
 | `lab/OCI_METRICS.md` | Real OCI metrics (Function) setup |
 | `lab/OCC_DASHBOARD.md` | OCC dashboard metric mapping |
 | `dashboards/dashboard_group_OCC.json` | Importable Oracle Cloud Compute dashboard group |

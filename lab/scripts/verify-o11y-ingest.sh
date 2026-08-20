@@ -12,7 +12,7 @@ echo "=== Recent collector logs (kafka / export / error) ==="
 docker compose logs otel-collector 2>&1 | grep -iE 'kafka|otlp|export|error|401|403' | tail -25 || docker compose logs otel-collector --tail 25
 
 echo ""
-echo "=== Splunk credentials check ==="
+echo "=== Splunk O11y credentials check ==="
 if [[ ! -f .env.splunk ]]; then
   echo "FAIL: .env.splunk missing" >&2
   exit 1
@@ -31,7 +31,7 @@ echo "OK  SPLUNK_INGEST_URL=${SPLUNK_INGEST_URL:-unset}"
 
 echo ""
 echo "=== O11y UI verification ==="
-echo "1. Open Splunk Observability Cloud → Log Observer (or Logs)"
+echo "1. Open Splunk O11y → Log Observer (or Logs)"
 echo "2. Time range: Last 15 minutes"
 echo "3. Filter: deployment.environment.name:oci-connector-lab"
 echo "4. Search for: Connector Hub OR compute OR apigateway"

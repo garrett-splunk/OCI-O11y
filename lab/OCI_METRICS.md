@@ -1,4 +1,4 @@
-# OCI Monitoring metrics → Splunk Observability Cloud
+# OCI Monitoring metrics → Splunk O11y
 
 Two paths: **production** (Connector Hub → OCI Function) and **local lab** (fixture simulator).
 
@@ -14,10 +14,10 @@ oci-metrics-forwarder (OCI Function)
         ↓
 POST https://ingest.{realm}.signalfx.com/v2/datapoint
         ↓
-Splunk Observability Cloud — Metric Finder
+Splunk O11y — Metric Finder
 ```
 
-Connector Hub does **not** send Splunk-native metrics directly. The Function maps OCI payloads to Splunk `gauge` datapoints with dimensions (`oci_namespace`, `oci_dim_*`, etc.).
+Connector Hub does **not** send Splunk O11y-native metrics directly. The Function maps OCI payloads to Splunk O11y `gauge` datapoints with dimensions (`oci_namespace`, `oci_dim_*`, etc.).
 
 ## Deployment order
 
@@ -31,7 +31,7 @@ Connector Hub does **not** send Splunk-native metrics directly. The Function map
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `SPLUNK_O11Y_REALM` | `us0` | Realm for ingest URL |
-| `SPLUNK_O11Y_TOKEN` | — | Splunk ingest token (required) |
+| `SPLUNK_O11Y_TOKEN` | — | Splunk O11y ingest token (required) |
 | `SPLUNK_INGEST_URL` | — | Optional override (e.g. custom ingest host) |
 | `DEPLOYMENT_ENVIRONMENT` | `oci-connector-lab` | `deployment.environment.name` dimension |
 | `FORWARD_TO_SPLUNK` | `true` | Set `false` to transform-only test |
@@ -56,9 +56,9 @@ Console: **Connector Hub → Create connector**
 - **Target:** Functions — your app + `oci-metrics-forwarder`
 - Allow auto-created IAM policies for metrics read + function invoke
 
-## OCI → Splunk mapping
+## OCI → Splunk O11y mapping
 
-| OCI field | Splunk field |
+| OCI field | Splunk O11y field |
 |-----------|--------------|
 | `name` | `metric` |
 | `datapoints[].value` | `value` |
@@ -71,7 +71,7 @@ Console: **Connector Hub → Create connector**
 
 ## Local lab (no OCI tenancy required)
 
-Simulates the Function transform and POSTs to your Splunk org:
+Simulates the Function transform and POSTs to your Splunk O11y org:
 
 ```bash
 cd lab
@@ -88,6 +88,6 @@ cd lab
 | Source | OCI Logging | OCI Monitoring |
 | Connector target | Streaming | Function |
 | Consumer | OTel `kafka` receiver | Function → REST API |
-| Splunk sink | `otlphttp` `/v3/event` | `/v2/datapoint` gauge |
+| Splunk O11y sink | `otlphttp` `/v3/event` | `/v2/datapoint` gauge |
 
-Reference: [Oracle — Exporting OCI Monitoring Metrics to Splunk Observability](https://github.com/oracle-samples) (workshop pattern).
+Reference: [Oracle — Exporting OCI Monitoring Metrics to Splunk O11y](https://github.com/oracle-samples) (workshop pattern).

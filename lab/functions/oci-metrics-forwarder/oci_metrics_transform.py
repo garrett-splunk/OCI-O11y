@@ -1,4 +1,4 @@
-"""Transform OCI Monitoring metric payloads to Splunk Observability /v2/datapoint format."""
+"""Transform OCI Monitoring metric payloads to Splunk O11y /v2/datapoint format."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ def oci_metric_to_splunk_gauges(
     *,
     environment: str | None = None,
 ) -> list[dict[str, Any]]:
-    """Map one OCI metric event to Splunk gauge datapoints (one per OCI datapoint)."""
+    """Map one OCI metric event to Splunk O11y gauge datapoints (one per OCI datapoint)."""
     env = environment or DEFAULT_ENVIRONMENT
     namespace = oci_payload.get("namespace", "unknown")
     compartment_id = oci_payload.get("compartmentId", "")
@@ -55,7 +55,7 @@ def oci_metric_to_splunk_gauges(
 
 
 def transform_payload(payload: dict[str, Any], *, environment: str | None = None) -> dict[str, list]:
-    """Return Splunk datapoint body with gauge array."""
+    """Return Splunk O11y datapoint body with gauge array."""
     if isinstance(payload, list):
         gauges: list[dict[str, Any]] = []
         for item in payload:

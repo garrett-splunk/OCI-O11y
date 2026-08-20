@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OCI Function: transform OCI Monitoring metrics and forward to Splunk Observability.
+OCI Function: transform OCI Monitoring metrics and forward to Splunk O11y.
 
 Deploy to OCI Functions; configure Service Connector Hub:
   Source: Monitoring (namespace e.g. oci_vcn)
@@ -8,7 +8,7 @@ Deploy to OCI Functions; configure Service Connector Hub:
 
 Environment variables:
   SPLUNK_O11Y_REALM       - e.g. us0
-  SPLUNK_O11Y_TOKEN       - Splunk ingest token
+  SPLUNK_O11Y_TOKEN       - Splunk O11y ingest token
   DEPLOYMENT_ENVIRONMENT  - default oci-connector-lab
   FORWARD_TO_SPLUNK       - true/false (default true)
   LOGGING_LEVEL           - INFO, DEBUG, etc.

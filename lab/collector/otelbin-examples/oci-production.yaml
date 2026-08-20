@@ -1,4 +1,4 @@
-# Production OCI Streaming → Splunk Observability Cloud logs (OTLP)
+# Production OCI Streaming → Splunk O11y logs (OTLP)
 # Adapt from Splunk Lantern SOC4Kafka guide; sink changed from splunk_hec to otlp_http.
 # OCI Streaming requires Kafka protocol 1.0.0 and SASL_SSL/PLAIN auth.
 

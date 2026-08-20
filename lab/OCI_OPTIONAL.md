@@ -7,9 +7,9 @@ The local lab uses **Redpanda** as a Kafka-compatible stand-in. Use these steps 
 1. **OCI Logging** — service logs, audit logs, custom logs in a log group
 2. **Connector Hub** — service connector: source = Logging, target = Streaming
 3. **OCI Streaming** — Kafka 1.0-compatible stream pool + topic
-4. **Splunk OTel Collector** — `kafka` receiver (SOC4Kafka pattern) → `otlphttp` → O11y `/v3/event`
+4. **Splunk OTel Collector** — `kafka` receiver (SOC4Kafka pattern) → `otlphttp` → Splunk O11y `/v3/event`
 
-Connector Hub does **not** export OTLP directly. OTLP is configured on the **Splunk collector** side.
+Connector Hub does **not** export OTLP directly. OTLP is configured on the **Splunk OTel Collector** side.
 
 ## Console: Connector Hub (Logging → Streaming)
 
@@ -58,5 +58,5 @@ See [OCI Connector Hub docs](https://docs.oracle.com/en-us/iaas/Content/connecto
 
 ## Related references
 
-- [Splunk Lantern — OCI Streaming + SOC4Kafka](https://lantern.splunk.com/Platform_Data_Management/Unlock_Insights/Forwarding_OCI_Streaming_to_Splunk_with_Splunk_OpenTelemetry_Collector_for_Kafka) (HEC sink; adapt to `otlphttp` for O11y)
+- [Splunk Lantern — OCI Streaming + SOC4Kafka](https://lantern.splunk.com/Platform_Data_Management/Unlock_Insights/Forwarding_OCI_Streaming_to_Splunk_with_Splunk_OpenTelemetry_Collector_for_Kafka) (HEC sink; adapt to `otlphttp` for Splunk O11y)
 - [adibirzu/oci-splunk](https://github.com/adibirzu/oci-splunk) — Terraform stack for OCI → Streaming → SOC4Kafka → Splunk Platform

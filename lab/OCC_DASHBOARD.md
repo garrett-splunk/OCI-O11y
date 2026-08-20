@@ -17,7 +17,7 @@ cp .env.splunk.example .env.splunk   # set SPLUNK_ACCESS_TOKEN + SPLUNK_INGEST_U
 
 Import the dashboard group in Observability Cloud: **Dashboards → Create dashboard group → Import JSON** and select `dashboards/dashboard_group_OCC.json`.
 
-## How metrics reach Splunk (OCI integration)
+## How metrics reach Splunk O11y (OCI integration)
 
 ### Production path
 
@@ -27,10 +27,10 @@ OCI Monitoring (oci_computeagent metrics on compute instances)
 OCI Connector Hub (Monitoring source → Function target)
         ↓
 OCI Function (lab/functions/oci-metrics-forwarder/func.py)
-  • maps OCI JSON → Splunk /v2/datapoint gauge body
+  • maps OCI JSON → Splunk O11y /v2/datapoint gauge body
   • adds oci_namespace, oci_dim_*, deployment.environment.name
         ↓
-Splunk Observability Cloud ingest (/v2/datapoint)
+Splunk O11y ingest (/v2/datapoint)
         ↓
 Signalflow charts in OCC dashboards (filter oci_namespace = oci_computeagent)
 ```
@@ -42,14 +42,14 @@ fixtures/oci-occ-dashboard-metrics.jsonl
         ↓
 scripts/send-oci-metrics.py (uses lab/lib/oci_metrics_transform.py)
         ↓
-Splunk Observability Cloud /v2/datapoint
+Splunk O11y /v2/datapoint
 ```
 
 The Python transform is shared with the deployable OCI Function so local runs match production shape.
 
 ## Metric and dimension mapping
 
-| OCI Monitoring | Splunk metric | Required dimensions for OCC charts |
+| OCI Monitoring | Splunk O11y metric | Required dimensions for OCC charts |
 |----------------|---------------|-----------------------------------|
 | `namespace: oci_computeagent` | dimension `oci_namespace` | Always filter `oci_computeagent` |
 | `name: CpuUtilization` | `CpuUtilization` | `oci_dim_resourceId`, `oci_dim_resourceDisplayName`, `oci_dim_imageId`, `oci_dim_shape`, `oci_dim_availabilityDomain`, `oci_dim_instancePoolId` |

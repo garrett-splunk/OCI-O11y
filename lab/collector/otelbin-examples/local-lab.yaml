@@ -1,4 +1,4 @@
-# Local lab: Docker Kafka (PLAINTEXT) → otlp_http → Splunk Observability Cloud logs
+# Local lab: Docker Kafka (PLAINTEXT) → otlp_http → Splunk O11y logs
 # Matches lab/collector/otelcol-config.yaml
 
 extensions:

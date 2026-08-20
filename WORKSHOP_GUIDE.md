@@ -6,7 +6,7 @@
 
 | Step | Artifact | Why |
 |------|----------|-----|
-| 1 | Prerequisites | Python 3, Splunk ingest token (metrics scope) |
+| 1 | Prerequisites | Python 3, Splunk O11y ingest token (metrics scope) |
 | 2 | `.env.splunk` | Realm + token + ingest URL (match US0/US1/etc.) |
 | 3 | `produce-oci-metrics.sh` | Simulated Monitoring metrics |
 | 4 | Metric Finder | Verify gauge metrics |
@@ -32,13 +32,13 @@
 **Why metrics-first**
 
 - Observability Cloud ingest tokens work for **metrics** (`/v2/datapoint`) on all orgs.
-- **Log Observer** for OCI logs typically requires a linked Splunk Cloud or Enterprise instance — many workshop attendees only have O11y metrics.
+- **Log Observer** for OCI logs typically requires a linked Splunk Cloud or Enterprise instance — many workshop attendees only have Splunk O11y metrics.
 - The metrics path matches production OCI Connector Hub (Monitoring → Function) without Docker.
 
 **Metrics path (Monitoring → Function)**
 
 - Connector Hub source = **Monitoring**, target = **Function** (not Streaming)
-- Function maps OCI JSON to Splunk `gauge` arrays and POSTs `/v2/datapoint`
+- Function maps OCI JSON to Splunk O11y `gauge` arrays and POSTs `/v2/datapoint`
 - Deploy Function **before** creating the Service Connector
 - Local lab: `send-oci-metrics.py` uses the same transform as `functions/oci-metrics-forwarder/func.py`
 

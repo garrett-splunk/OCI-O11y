@@ -72,7 +72,7 @@ def post_datapoints(token: str, ingest_url: str, body: dict) -> None:
             print(f"POST {url} -> HTTP {resp.status} ({len(body.get('gauge', []))} gauge points)")
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
-        raise SystemExit(f"ERROR: HTTP {exc.code} from Splunk ingest: {detail}") from exc
+        raise SystemExit(f"ERROR: HTTP {exc.code} from Splunk O11y ingest: {detail}") from exc
 
 
 def load_fixtures(path: Path) -> list[dict]:

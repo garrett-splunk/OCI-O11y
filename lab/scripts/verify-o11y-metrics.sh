@@ -4,7 +4,7 @@ set -euo pipefail
 LAB_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$LAB_ROOT"
 
-echo "=== Splunk credentials ==="
+echo "=== Splunk O11y credentials ==="
 if [[ ! -f .env.splunk ]]; then
   echo "FAIL: .env.splunk missing" >&2
   exit 1
@@ -26,7 +26,7 @@ python3 scripts/send-oci-metrics.py --count 3 --interval 0.2
 
 echo ""
 echo "=== O11y UI verification ==="
-echo "1. Open Splunk Observability Cloud → Metric Finder"
+echo "1. Open Splunk O11y → Metric Finder"
 echo "2. Time range: Last 15 minutes"
 echo "3. Search metrics: VnicFromNetworkBytes, CpuUtilization, HttpRequests"
 echo "4. Filter: deployment.environment.name:oci-connector-lab"
