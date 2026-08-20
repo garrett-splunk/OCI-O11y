@@ -1,0 +1,62 @@
+# OCI Connector Hub lab — kafka receiver (OCI Streaming stand-in) → Splunk O11y logs via OTLP
+# Requires lab/.env.splunk with SPLUNK_ACCESS_TOKEN, SPLUNK_INGEST_URL
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  kafka:
+    brokers:
+      - ${env:KAFKA_BOOTSTRAP}
+    group_id: ${env:KAFKA_CONSUMER_GROUP}
+    client_id: ${env:KAFKA_CONSUMER_GROUP}
+    initial_offset: earliest
+    logs:
+      topics:
+        - ${env:KAFKA_TOPIC}
+      encoding: text
+    # Local lab: PLAINTEXT Kafka. For OCI Streaming use SASL_SSL/PLAIN — see otelbin-examples/oci-production.yaml
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 256
+  memory_limiter:
+    check_interval: 2s
+    limit_mib: 256
+  resource/oci_lab:
+    attributes:
+      - key: deployment.environment
+        value: ${env:DEPLOYMENT_ENVIRONMENT}
+        action: upsert
+      - key: deployment.environment.name
+        value: ${env:DEPLOYMENT_ENVIRONMENT}
+        action: upsert
+      - key: cloud.provider
+        value: oci
+        action: upsert
+      - key: demo.name
+        value: oci-connector-o11y-workshop
+        action: upsert
+  transform/oci_logs:
+    log_statements:
+      - context: log
+        statements:
+          - set(attributes["oci.source"], "connector-hub-streaming")
+
+exporters:
+  otlphttp/o11y_logs:
+    logs_endpoint: ${env:SPLUNK_INGEST_URL}/v3/event
+    headers:
+      X-SF-Token: ${env:SPLUNK_ACCESS_TOKEN}
+  debug:
+    verbosity: basic
+
+service:
+  extensions: [health_check]
+  pipelines:
+    logs:
+      receivers: [kafka]
+      processors: [memory_limiter, resource/oci_lab, transform/oci_logs, batch]
+      exporters: [otlphttp/o11y_logs, debug]

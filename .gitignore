@@ -1,0 +1,5 @@
+.DS_Store
+lab/.env
+lab/.env.splunk
+lab/*.tar.gz
+lab/oci-connector-o11y-export/

@@ -1,0 +1,69 @@
+# Production OCI Streaming → Splunk Observability Cloud logs (OTLP)
+# Adapt from Splunk Lantern SOC4Kafka guide; sink changed from splunk_hec to otlp_http.
+# OCI Streaming requires Kafka protocol 1.0.0 and SASL_SSL/PLAIN auth.
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  kafka:
+    brokers:
+      - ${env:KAFKA_BOOTSTRAP}
+    protocol_version: "1.0.0"
+    group_id: ${env:KAFKA_CONSUMER_GROUP}
+    client_id: ${env:KAFKA_CONSUMER_GROUP}
+    group_rebalance_strategy: range
+    initial_offset: earliest
+    tls:
+      insecure_skip_verify: false
+    auth:
+      sasl:
+        username: ${env:KAFKA_SASL_USER}
+        password: ${env:KAFKA_SASL_PASS}
+        mechanism: PLAIN
+    logs:
+      topics:
+        - ${env:KAFKA_TOPIC}
+      encoding: text
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 256
+  memory_limiter:
+    check_interval: 2s
+    limit_mib: 512
+  resourcedetection:
+    detectors: [system]
+    system:
+      hostname_sources: ["os"]
+  resource/oci_lab:
+    attributes:
+      - key: deployment.environment
+        value: ${env:DEPLOYMENT_ENVIRONMENT}
+        action: upsert
+      - key: deployment.environment.name
+        value: ${env:DEPLOYMENT_ENVIRONMENT}
+        action: upsert
+      - key: cloud.provider
+        value: oci
+        action: upsert
+
+exporters:
+  otlphttp/o11y_logs:
+    logs_endpoint: ${env:SPLUNK_INGEST_URL}/v3/event
+    headers:
+      X-SF-Token: ${env:SPLUNK_ACCESS_TOKEN}
+    sending_queue:
+      enabled: true
+      num_consumers: 4
+      queue_size: 5000
+
+service:
+  extensions: [health_check]
+  pipelines:
+    logs:
+      receivers: [kafka]
+      processors: [memory_limiter, resourcedetection, resource/oci_lab, batch]
+      exporters: [otlphttp/o11y_logs]

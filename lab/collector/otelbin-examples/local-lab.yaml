@@ -1,0 +1,50 @@
+# Local lab: Docker Kafka (PLAINTEXT) → otlp_http → Splunk Observability Cloud logs
+# Matches lab/collector/otelcol-config.yaml
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  kafka:
+    brokers:
+      - kafka:9092
+    group_id: oci-o11y-lab
+    client_id: oci-o11y-lab
+    initial_offset: earliest
+    logs:
+      topics:
+        - oci-logs
+      encoding: text
+
+processors:
+  batch:
+    timeout: 5s
+  memory_limiter:
+    check_interval: 2s
+    limit_mib: 256
+  resource/oci_lab:
+    attributes:
+      - key: deployment.environment
+        value: oci-connector-lab
+        action: upsert
+      - key: deployment.environment.name
+        value: oci-connector-lab
+        action: upsert
+      - key: cloud.provider
+        value: oci
+        action: upsert
+
+exporters:
+  otlphttp/o11y_logs:
+    logs_endpoint: ${SPLUNK_INGEST_URL}/v3/event
+    headers:
+      X-SF-Token: ${SPLUNK_ACCESS_TOKEN}
+
+service:
+  extensions: [health_check]
+  pipelines:
+    logs:
+      receivers: [kafka]
+      processors: [memory_limiter, resource/oci_lab, batch]
+      exporters: [otlphttp/o11y_logs]
