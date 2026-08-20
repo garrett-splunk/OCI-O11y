@@ -301,7 +301,13 @@ cd OCI-O11y/lab</code></pre>
             <li>Arguments: <code>20</code> = iterations, <code>30</code> = seconds between batches (~10 minutes total).</li>
           </ol>
         </div>
-        <p>See <code>lab/OCI_METRICS.md</code> for Function deploy and Service Connector (Monitoring → Function) steps.</p>
+        <p>See <a href="#step-oci">step 6</a> and <code>lab/OCI_METRICS.md</code> to run the same forwarder on OCI Functions with live Monitoring data.</p>
+        <div class="callout callout--tip">
+          <p class="callout__title">Same code, two runtimes</p>
+          <div class="callout__body">
+            <p><code>send-oci-metrics.py</code> on your laptop and <code>func.py</code> in OCI Functions both call <code>oci_metrics_transform.py</code> and POST to <code>/v2/datapoint</code>. Steps 3–5 use fixture files; step 6 replaces fixtures with Connector Hub delivering real <code>oci_computeagent</code> metrics from your tenancy.</p>
+          </div>
+        </div>
         <table>
           <thead>
             <tr><th>OCI field</th><th>Splunk O11y gauge field</th></tr>
@@ -594,11 +600,92 @@ docker compose restart otel-collector</code></pre>
       </section>
 
       <section id="step-oci">
-        <h2>6 — Real OCI metrics (production)</h2>
+        <h2>6 — Connect a real OCI tenancy</h2>
         <p>
-          See <code>lab/OCI_METRICS.md</code> for Connector Hub (Monitoring → Function), deploy order, and the forwarder in
-          <code>lab/functions/oci-metrics-forwarder/</code>.
+          Steps 3–5 run the forwarder <strong>locally</strong> with demo fixtures. This step adds what you need so the
+          <strong>same script logic runs inside OCI</strong> and Connector Hub delivers live Monitoring metrics to Splunk O11y.
+          Full detail: <code>lab/OCI_METRICS.md</code>.
         </p>
+
+        <h3>Local lab vs OCI (what changes)</h3>
+        <table>
+          <thead>
+            <tr><th>Component</th><th>Steps 3–5 (laptop)</th><th>Step 6 (OCI tenancy)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Transform + POST</td><td><code>scripts/send-oci-metrics.py</code></td><td><code>functions/oci-metrics-forwarder/func.py</code> on <strong>OCI Functions</strong></td></tr>
+            <tr><td>Metric source</td><td><code>fixtures/oci-occ-dashboard-metrics.jsonl</code></td><td><strong>OCI Monitoring</strong> on real compute / VCN</td></tr>
+            <tr><td>Trigger</td><td><code>./scripts/fill-occ-dashboard.sh</code></td><td><strong>Connector Hub</strong> (Monitoring → Function)</td></tr>
+            <tr><td>Splunk token</td><td><code>lab/.env.splunk</code></td><td>Function env <code>SPLUNK_O11Y_TOKEN</code></td></tr>
+            <tr><td>Filter in Splunk O11y</td><td><code>deployment.environment.name:oci-connector-lab</code></td><td><code>deployment.environment.name:oci-workshop-live</code> (recommended)</td></tr>
+            <tr><td>Instance OCIDs</td><td><code>…workshop-1</code>, <code>…workshop-2</code> (fixtures)</td><td>Real OCIDs from <strong>Compute → Instances</strong></td></tr>
+          </tbody>
+        </table>
+
+        <h3>Additional steps checklist</h3>
+        <ol>
+          <li><strong>Prerequisites</strong> — OCI tenancy access, compartment, VCN/subnet with HTTPS egress to Splunk ingest, at least one compute instance with Monitoring enabled, OCI CLI + Fn CLI installed.</li>
+          <li><strong>Prove OCI has metrics</strong> — Console: <em>Monitoring → Metrics Explorer</em>, namespace <code>oci_computeagent</code>, metric <code>CpuUtilization</code>, pick a real instance OCID. Or use <code>oci monitoring metric-data summarize-metrics-data</code> (see <code>lab/OCI_METRICS.md</code>).</li>
+          <li><strong>Deploy the Function</strong> — from <code>lab/functions/oci-metrics-forwarder/</code>:
+            <div class="code-block">
+              <div class="code-block__head"><span class="code-block__file">OCI Functions (Fn CLI)</span></div>
+              <pre><code>fn create app oci-o11y-workshop --annotation oracle.com/oci/subnetIds='["&lt;subnet-ocid&gt;"]'
+fn deploy --app oci-o11y-workshop</code></pre>
+            </div>
+          </li>
+          <li><strong>Configure Function env</strong> — set Splunk token, realm, and a live environment tag (so live data does not mix with lab fixtures):
+            <div class="code-block">
+              <div class="code-block__head"><span class="code-block__file">Function configuration</span></div>
+              <pre><code>fn config function oci-o11y-workshop oci-metrics-forwarder SPLUNK_O11Y_TOKEN "&lt;token&gt;"
+fn config function oci-o11y-workshop oci-metrics-forwarder SPLUNK_O11Y_REALM "us1"
+fn config function oci-o11y-workshop oci-metrics-forwarder DEPLOYMENT_ENVIRONMENT "oci-workshop-live"</code></pre>
+            </div>
+          </li>
+          <li><strong>Create Connector Hub</strong> — Console: <em>Connector Hub → Create connector</em>
+            <ul>
+              <li>Source: <strong>Monitoring</strong> — compartment + namespace <code>oci_computeagent</code> (for OCC dashboards)</li>
+              <li>Target: <strong>Functions</strong> — app <code>oci-o11y-workshop</code>, function <code>oci-metrics-forwarder</code></li>
+              <li>Allow IAM policies for metrics read + Function invoke</li>
+            </ul>
+          </li>
+          <li><strong>Verify in OCI</strong> — connector state <em>Active</em>; Function invocations and logs show <code>Forwarded N gauge points -&gt; HTTP 200</code>.</li>
+          <li><strong>Verify in Splunk O11y</strong> — stop local <code>fill-occ-dashboard.sh</code>; Metric Finder: <code>CpuUtilization</code> + <code>deployment.environment.name:oci-workshop-live</code>; OCIDs must match your tenancy.</li>
+          <li><strong>OCC dashboards</strong> — re-use imported <code>dashboard_group_OCC.json</code>; on <strong>OCC Instance</strong>, select a <strong>real</strong> <code>oci_dim_resourceId</code>. Charts populate from live Monitoring, not fixtures.</li>
+        </ol>
+
+        <div class="flow-diagram" role="img" aria-label="Real OCI metrics path">
+          <div class="flow-node">
+            <div class="flow-title">Compute instances</div>
+            <div class="flow-sub">oci_computeagent metrics</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">
+            <div class="flow-title">Connector Hub</div>
+            <div class="flow-sub">Monitoring → Function</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">
+            <div class="flow-title">func.py on OCI</div>
+            <div class="flow-sub">same transform as lab</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">
+            <div class="flow-title">Splunk O11y</div>
+            <div class="flow-sub">oci-workshop-live tag</div>
+          </div>
+        </div>
+
+        <div class="callout callout--info">
+          <p class="callout__title">Prove it is live (not fixtures)</p>
+          <div class="callout__body">
+            <ol>
+              <li>Stop <code>fill-occ-dashboard.sh</code> on your laptop.</li>
+              <li>In OCI Metrics Explorer, note CPU % for instance <code>X</code>.</li>
+              <li>In Splunk O11y, filter <code>oci_dim_resourceId</code> to the same OCID — values should track OCI.</li>
+            </ol>
+          </div>
+        </div>
+
         <p>
           <strong>Splunk reference implementation:</strong>
           <a href="https://github.com/splunk/oracle-cloud-examples-splunk-observability/tree/master/samples/oci-monitoring-metrics-to-splunk-observability-python" target="_blank" rel="noopener">oci-monitoring-metrics-to-splunk-observability-python</a>
@@ -638,7 +725,9 @@ docker compose restart otel-collector</code></pre>
           <p>Scroll to the top row on the <strong>OCC Instance</strong> dashboard — the single-value tiles sit above the time-series charts. Re-import the latest <code>dashboards/dashboard_group_OCC.json</code> from this repo (the lab version uses <code>mean(over='5m')</code> and an <code>oci_namespace</code> filter on memory). Select an instance in the <code>oci_dim_resourceId</code> variable, keep the time range at <strong>Last 15 minutes</strong>, and run <code>./scripts/fill-occ-dashboard.sh 20 30</code> again.</p>
         </details>
         <details>
-          <summary>No logs in Log Observer</summary>
+          <summary>Live OCI metrics not appearing in Splunk O11y</summary>
+          <p>Confirm Function logs show HTTP 200 to Splunk ingest; realm/token match your org. Connector Hub source namespace must include <code>oci_computeagent</code> for OCC dashboards. Subnet egress must allow HTTPS to <code>ingest.&lt;realm&gt;.signalfx.com</code>. Filter Splunk O11y with your live tag (e.g. <code>deployment.environment.name:oci-workshop-live</code>), not <code>oci-connector-lab</code>.</p>
+        </details>
           <p>Expected if your org has Splunk O11y metrics only. Log Observer requires Splunk Cloud or Enterprise integration. Skip the <a href="#appendix-logs">logs appendix</a>.</p>
         </details>
         <details>

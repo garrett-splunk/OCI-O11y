@@ -28,7 +28,20 @@ Import `dashboards/dashboard_group_OCC.json`, then run `./scripts/fill-occ-dashb
 
 See `lab/OCC_DASHBOARD.md` for OCI integration → Signalflow mapping.
 
-**Splunk O11y filter:** `deployment.environment.name:oci-connector-lab`
+**Splunk O11y filter (local lab):** `deployment.environment.name:oci-connector-lab`
+
+**Splunk O11y filter (live OCI tenancy):** `deployment.environment.name:oci-workshop-live` (after step 6 in `lab/OCI_METRICS.md`)
+
+## Connect a real OCI tenancy (step 6)
+
+Local scripts mirror `func.py` on OCI Functions. To use live Monitoring data instead of fixtures:
+
+1. Confirm metrics in OCI **Metrics Explorer** (`oci_computeagent`)
+2. Deploy `lab/functions/oci-metrics-forwarder/` with Fn CLI
+3. Create Connector Hub: **Monitoring → Function**
+4. Verify in Splunk O11y with real instance OCIDs (stop local fill script to prove it is live)
+
+See `lab/OCI_METRICS.md` for CLI commands and verification steps.
 
 ## Optional — logs path
 

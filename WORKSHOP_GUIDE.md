@@ -11,7 +11,7 @@
 | 3 | `produce-oci-metrics.sh` | Simulated Monitoring metrics |
 | 4 | Metric Finder | Verify gauge metrics |
 | 5 | `fill-occ-dashboard.sh` | Populate Oracle Cloud Compute dashboards |
-| 6 | `OCI_METRICS.md` | Real OCI deploy path |
+| 6 | `OCI_METRICS.md` + step 6 on site | Deploy Function + Connector Hub; live tenancy metrics |
 | 7 | Production gotchas | Function order, namespace filters |
 | — | Logs appendix (optional) | Docker + collector; needs Splunk Cloud/Enterprise for Log Observer |
 
@@ -41,6 +41,7 @@
 - Function maps OCI JSON to Splunk O11y `gauge` arrays and POSTs `/v2/datapoint`
 - Deploy Function **before** creating the Service Connector
 - Local lab: `send-oci-metrics.py` uses the same transform as `functions/oci-metrics-forwarder/func.py`
+- Real tenancy: stop local fill script; use `DEPLOYMENT_ENVIRONMENT=oci-workshop-live` on the Function; verify OCIDs in Metrics Explorer match Splunk O11y
 
 **OCC dashboards**
 
@@ -83,9 +84,20 @@ Import `dashboards/dashboard_group_OCC.json`.
 
 While running: **Oracle Cloud Compute** dashboards, Last 15 minutes. Explain `.delta()` on disk/network counters.
 
-### Part 4 — Real OCI + optional logs (5 min)
+### Part 4 — Connect real OCI tenancy (10–15 min, optional)
 
-Walk `OCI_METRICS.md` deploy order. Mention logs appendix only if org has Log Observer.
+Walk **step 6** on the workshop site or `lab/OCI_METRICS.md`. Key message: **local scripts and OCI Function run the same transform**.
+
+1. **Metrics Explorer** — show `oci_computeagent` / `CpuUtilization` on a real instance OCID.
+2. **Deploy Function** — `fn deploy` from `lab/functions/oci-metrics-forwarder/`.
+3. **Connector Hub** — Monitoring → Function; namespace `oci_computeagent`.
+4. **Splunk proof** — stop `fill-occ-dashboard.sh`; filter `deployment.environment.name:oci-workshop-live`; OCIDs match Compute console.
+
+Optional: run lab fixtures (`oci-connector-lab`) and live tenancy (`oci-workshop-live`) in parallel with different Splunk filters.
+
+### Part 5 — Optional logs (5 min)
+
+Walk `OCI_OPTIONAL.md` deploy order. Mention logs appendix only if org has Log Observer.
 
 ## One-liner cheat sheet
 
@@ -101,5 +113,6 @@ Filter: `deployment.environment.name:oci-connector-lab`
 |---------|-----|
 | HTTP 401 on metrics | Token + realm mismatch (US1 → `ingest.us1.signalfx.com`) |
 | Metrics in Finder, dashboards empty | Run `fill-occ-dashboard.sh`; import OCC JSON; Last 15 min |
+| Live OCI metrics missing in Splunk | Function logs HTTP 200; connector Active; filter `oci-workshop-live`; subnet HTTPS egress |
 | No logs in Log Observer | Expected on O11y-only orgs — skip logs appendix |
 | Collector won't start | Logs appendix only; collector v0.155.0+ |
