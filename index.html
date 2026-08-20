@@ -43,6 +43,7 @@
         <li class="sidebar-tree__item"><a href="#step-metrics" class="sidebar-tree__link" data-step="3"><span class="sidebar-tree__num">3</span> Send OCI metrics</a></li>
         <li class="sidebar-tree__item"><a href="#step-metrics-verify" class="sidebar-tree__link" data-step="4"><span class="sidebar-tree__num">4</span> Verify metrics</a></li>
         <li class="sidebar-tree__item"><a href="#step-occ" class="sidebar-tree__link" data-step="5"><span class="sidebar-tree__num">5</span> OCC dashboards</a></li>
+        <li class="sidebar-tree__item"><a href="#script-breakdown" class="sidebar-tree__link" data-step="0"><span class="sidebar-tree__num">?</span> Script breakdown</a></li>
         <li class="sidebar-tree__item"><a href="#quick-commands" class="sidebar-tree__link" data-step="0"><span class="sidebar-tree__num">⌘</span> All commands</a></li>
         <li class="sidebar-tree__item"><a href="#appendix-logs" class="sidebar-tree__link" data-step="0"><span class="sidebar-tree__num">+</span> Optional: logs path</a></li>
         <li class="sidebar-tree__item"><a href="#step-oci" class="sidebar-tree__link" data-step="6"><span class="sidebar-tree__num">6</span> Real OCI metrics</a></li>
@@ -175,6 +176,13 @@
           <pre><code id="cmd-clone">git clone https://github.com/garrett-splunk/OCI-O11y.git
 cd OCI-O11y/lab</code></pre>
         </div>
+        <div class="script-breakdown">
+          <p class="script-breakdown__title">What this does</p>
+          <ol>
+            <li><code>git clone</code> — downloads the repo (workshop site + <code>lab/</code> scripts) to your machine.</li>
+            <li><code>cd OCI-O11y/lab</code> — all script commands in this guide run from the <code>lab</code> directory.</li>
+          </ol>
+        </div>
       </section>
 
       <section id="step-splunk">
@@ -190,6 +198,14 @@ cd OCI-O11y/lab</code></pre>
 # Example for US1:
 # SPLUNK_REALM=us1
 # SPLUNK_INGEST_URL=https://ingest.us1.signalfx.com</code></pre>
+        </div>
+        <div class="script-breakdown">
+          <p class="script-breakdown__title">What this does</p>
+          <ol>
+            <li><code>cp .env.splunk.example .env.splunk</code> — creates your local secrets file (gitignored).</li>
+            <li>You edit <code>SPLUNK_ACCESS_TOKEN</code> (ingest scope) and match <code>SPLUNK_REALM</code> / <code>SPLUNK_INGEST_URL</code> to your org (e.g. US1 → <code>ingest.us1.signalfx.com</code>).</li>
+            <li>All metric scripts read this file to authenticate POSTs to Splunk.</li>
+          </ol>
         </div>
       </section>
 
@@ -207,12 +223,32 @@ cd OCI-O11y/lab</code></pre>
           </div>
           <pre><code id="cmd-metrics">./scripts/produce-oci-metrics.sh 5</code></pre>
         </div>
+        <div class="script-breakdown">
+          <p class="script-breakdown__title">What <code>produce-oci-metrics.sh 5</code> runs</p>
+          <ol>
+            <li>Shell wrapper calls <code>python3 scripts/send-oci-metrics.py --count 5 --interval 0.5</code>.</li>
+            <li>Python loads <code>lab/.env.splunk</code> for token and ingest URL.</li>
+            <li>Reads <code>fixtures/oci-metric-samples.jsonl</code> — mixed OCI namespaces (VCN, compute, LB, DB).</li>
+            <li>For each line: <code>oci_metrics_transform.py</code> maps OCI JSON → Splunk <code>gauge</code> body (<code>metric</code>, <code>value</code>, <code>oci_namespace</code>, <code>oci_dim_*</code>, <code>deployment.environment.name</code>).</li>
+            <li>Stamps current timestamps, then POSTs JSON to <code>{SPLUNK_INGEST_URL}/v2/datapoint</code> with header <code>X-SF-Token</code>.</li>
+            <li>Sends 5 metric events, 0.5s apart. Success: <code>HTTP 200</code> in terminal output.</li>
+          </ol>
+        </div>
         <div class="code-block">
           <div class="code-block__head">
             <span class="code-block__file">Metrics-only lab (verify + fill dashboards)</span>
             <button type="button" class="btn-copy" data-copy="cmd-metrics-lab">Copy</button>
           </div>
           <pre><code id="cmd-metrics-lab">./scripts/metrics-lab.sh 20 30</code></pre>
+        </div>
+        <div class="script-breakdown">
+          <p class="script-breakdown__title">What <code>metrics-lab.sh 20 30</code> runs</p>
+          <ol>
+            <li>Checks <code>.env.splunk</code> exists.</li>
+            <li>Runs <code>verify-o11y-metrics.sh</code> — validates token, sends 3 sample metrics, prints Metric Finder steps.</li>
+            <li>Runs <code>fill-occ-dashboard.sh 20 30</code> — loops OCC dashboard metrics (see step 5 breakdown).</li>
+            <li>Arguments: <code>20</code> = iterations, <code>30</code> = seconds between batches (~10 minutes total).</li>
+          </ol>
         </div>
         <p>See <code>lab/OCI_METRICS.md</code> for Function deploy and Service Connector (Monitoring → Function) steps.</p>
         <table>
@@ -236,6 +272,15 @@ cd OCI-O11y/lab</code></pre>
             <button type="button" class="btn-copy" data-copy="cmd-metrics-verify">Copy</button>
           </div>
           <pre><code id="cmd-metrics-verify">./scripts/verify-o11y-metrics.sh</code></pre>
+        </div>
+        <div class="script-breakdown">
+          <p class="script-breakdown__title">What <code>verify-o11y-metrics.sh</code> runs</p>
+          <ol>
+            <li>Confirms <code>.env.splunk</code> exists and token is not the placeholder.</li>
+            <li>Sources credentials and prints the ingest URL being used.</li>
+            <li>Calls <code>send-oci-metrics.py --count 3</code> — sends three sample metrics as a smoke test.</li>
+            <li>Prints checklist for confirming data in Splunk Metric Finder (time range, filters, dimensions).</li>
+          </ol>
         </div>
         <ol>
           <li>Open <strong>Metric Finder</strong> or chart builder</li>
@@ -291,6 +336,17 @@ cd OCI-O11y/lab</code></pre>
           </div>
           <pre><code id="cmd-occ-fill">./scripts/fill-occ-dashboard.sh 20 30</code></pre>
         </div>
+        <div class="script-breakdown">
+          <p class="script-breakdown__title">What <code>fill-occ-dashboard.sh 20 30</code> runs</p>
+          <ol>
+            <li>Calls <code>send-oci-metrics.py</code> with OCC-specific options:</li>
+            <li><code>--fixtures fixtures/oci-occ-dashboard-metrics.jsonl</code> — <code>oci_computeagent</code> metrics with dashboard dimensions (<code>resourceDisplayName</code>, <code>shape</code>, etc.).</li>
+            <li><code>--batch-all</code> — sends every fixture line in one POST per iteration (~24 gauge points).</li>
+            <li><code>--increment-counters</code> — multiplies disk/network byte counters each loop so Signalflow <code>.delta()</code> charts show non-zero rates.</li>
+            <li><code>--loop 20 --interval 30</code> — repeats every 30 seconds for ~10 minutes of time-series data.</li>
+            <li>CPU/memory gauges get small variations; counters grow monotonically.</li>
+          </ol>
+        </div>
         <p>
           Disk and network charts use Signalflow <code>.delta()</code>, so the script sends <strong>increasing counter values</strong>
           on each iteration. CPU and memory gauges vary slightly so percentile charts move.
@@ -323,6 +379,82 @@ cd OCI-O11y/lab</code></pre>
         <p>Full reference: <code>lab/OCC_DASHBOARD.md</code></p>
       </section>
 
+      <section id="script-breakdown">
+        <h2>Script breakdown (reference)</h2>
+        <p>Every command in this lab is a thin wrapper. The core work happens in <code>send-oci-metrics.py</code> (metrics) or Docker/collector (optional logs).</p>
+
+        <h3>Metrics scripts (main lab)</h3>
+        <table>
+          <thead>
+            <tr><th>Command</th><th>Script</th><th>What runs under the hood</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>./scripts/produce-oci-metrics.sh 5</code></td>
+              <td><code>produce-oci-metrics.sh</code></td>
+              <td>→ <code>send-oci-metrics.py --count 5</code> using <code>oci-metric-samples.jsonl</code></td>
+            </tr>
+            <tr>
+              <td><code>./scripts/verify-o11y-metrics.sh</code></td>
+              <td><code>verify-o11y-metrics.sh</code></td>
+              <td>Validates <code>.env.splunk</code> → <code>send-oci-metrics.py --count 3</code> → prints UI checklist</td>
+            </tr>
+            <tr>
+              <td><code>./scripts/fill-occ-dashboard.sh 20 30</code></td>
+              <td><code>fill-occ-dashboard.sh</code></td>
+              <td>→ <code>send-oci-metrics.py</code> with OCC fixtures, <code>--batch-all --increment-counters --loop 20 --interval 30</code></td>
+            </tr>
+            <tr>
+              <td><code>./scripts/metrics-lab.sh 20 30</code></td>
+              <td><code>metrics-lab.sh</code></td>
+              <td>Chains <code>verify-o11y-metrics.sh</code> then <code>fill-occ-dashboard.sh</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3><code>send-oci-metrics.py</code> (shared by all metric scripts)</h3>
+        <ol>
+          <li>Load <code>SPLUNK_ACCESS_TOKEN</code> and <code>SPLUNK_INGEST_URL</code> from <code>.env.splunk</code>.</li>
+          <li>Read JSON lines from the fixtures file (default or <code>--fixtures</code>).</li>
+          <li><code>oci_metrics_transform.py</code> — same logic as the deployable OCI Function — builds Splunk <code>{"gauge": [...]}</code> payloads.</li>
+          <li>Optional: <code>--increment-counters</code> bumps disk/network values; <code>--batch-all</code> combines all fixtures per POST.</li>
+          <li>HTTP POST to <code>/v2/datapoint</code> with <code>X-SF-Token</code>. Reports <code>HTTP 200</code> and gauge point count.</li>
+        </ol>
+
+        <h3>Logs appendix scripts (optional, requires Docker)</h3>
+        <table>
+          <thead>
+            <tr><th>Command</th><th>What runs under the hood</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>./scripts/start.sh</code></td>
+              <td><code>docker compose up -d</code> — starts Redpanda (Kafka) + OTel Collector; waits for topic <code>oci-logs</code> and collector health on <code>:13133</code></td>
+            </tr>
+            <tr>
+              <td><code>./scripts/verify-stack.sh</code></td>
+              <td>Checks kafka + collector containers running, health endpoint, topic exists, <code>.env.splunk</code> present</td>
+            </tr>
+            <tr>
+              <td><code>./scripts/produce-oci-logs.sh 10 0.3</code></td>
+              <td>Reads <code>fixtures/oci-log-samples.jsonl</code>, refreshes timestamps/IDs, publishes JSON to Kafka topic <code>oci-logs</code> via <code>rpk</code> inside the Redpanda container</td>
+            </tr>
+            <tr>
+              <td><code>./scripts/verify-o11y-ingest.sh</code></td>
+              <td>Hits collector health, tails collector logs for kafka/export errors, validates credentials, prints Log Observer checklist</td>
+            </tr>
+            <tr>
+              <td><code>docker compose restart otel-collector</code></td>
+              <td>Reloads collector with updated <code>.env.splunk</code> — collector consumes Kafka and exports logs to <code>/v3/event</code></td>
+            </tr>
+            <tr>
+              <td><code>./scripts/teardown-lab.sh</code></td>
+              <td><code>docker compose down -v</code> — stops containers and removes volumes</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
       <section id="quick-commands">
         <h2>All commands (copy-paste)</h2>
         <div class="code-block">
@@ -343,6 +475,7 @@ cp .env.splunk.example .env.splunk
 # Or run the combined metrics lab script:
 # ./scripts/metrics-lab.sh 20 30</code></pre>
         </div>
+        <p class="muted">See <a href="#script-breakdown">Script breakdown</a> for what each command runs internally.</p>
       </section>
 
       <section id="appendix-logs">
@@ -365,6 +498,14 @@ cp .env.splunk.example .env.splunk
 ./scripts/verify-stack.sh
 docker compose restart otel-collector</code></pre>
         </div>
+        <div class="script-breakdown">
+          <p class="script-breakdown__title">What these run</p>
+          <ol>
+            <li><code>start.sh</code> — <code>docker compose up</code> for Redpanda + OTel Collector; creates Kafka topic <code>oci-logs</code>.</li>
+            <li><code>verify-stack.sh</code> — confirms containers, collector <code>:13133</code> health, and credentials file.</li>
+            <li><code>docker compose restart otel-collector</code> — picks up <code>.env.splunk</code> after you add your token.</li>
+          </ol>
+        </div>
 
         <h3>A2 — Wire the collector</h3>
         <p>Config: <code>lab/collector/otelcol-config.yaml</code>. Production SASL variant: <code>collector/otelbin-examples/oci-production.yaml</code>.</p>
@@ -377,6 +518,14 @@ docker compose restart otel-collector</code></pre>
           </div>
           <pre><code id="cmd-produce">./scripts/produce-oci-logs.sh 10 0.3
 ./scripts/verify-o11y-ingest.sh</code></pre>
+        </div>
+        <div class="script-breakdown">
+          <p class="script-breakdown__title">What these run</p>
+          <ol>
+            <li><code>produce-oci-logs.sh</code> — publishes OCI-shaped JSON log records to Kafka topic <code>oci-logs</code> (simulates Connector Hub → Streaming).</li>
+            <li>Collector <code>kafka</code> receiver consumes messages, adds <code>deployment.environment.name</code>, exports via <code>otlphttp</code> to <code>/v3/event</code>.</li>
+            <li><code>verify-o11y-ingest.sh</code> — checks collector health/logs and prints Log Observer verification steps.</li>
+          </ol>
         </div>
         <p>Real OCI setup: <code>lab/OCI_OPTIONAL.md</code>. Lantern reference uses HEC; this lab uses O11y OTLP (<code>/v3/event</code>).</p>
       </section>
@@ -433,6 +582,12 @@ docker compose restart otel-collector</code></pre>
             <button type="button" class="btn-copy" data-copy="cmd-teardown">Copy</button>
           </div>
           <pre><code id="cmd-teardown">./scripts/teardown-lab.sh</code></pre>
+        </div>
+        <div class="script-breakdown">
+          <p class="script-breakdown__title">What <code>teardown-lab.sh</code> runs</p>
+          <ol>
+            <li><code>docker compose down -v</code> — stops Redpanda and OTel Collector containers and deletes Kafka volumes.</li>
+          </ol>
         </div>
       </section>
 
