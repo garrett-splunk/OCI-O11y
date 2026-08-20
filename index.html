@@ -37,6 +37,7 @@
       <p class="sidebar__hint">Follow each step in order.</p>
       <ul class="sidebar-tree">
         <li class="sidebar-tree__item"><a href="#overview" class="sidebar-tree__link" data-step="0"><span class="sidebar-tree__num">—</span> Overview</a></li>
+        <li class="sidebar-tree__item"><a href="#integration-comparison" class="sidebar-tree__link" data-step="0"><span class="sidebar-tree__num">—</span> OCI vs DB receiver</a></li>
         <li class="sidebar-tree__item"><a href="#repo-setup" class="sidebar-tree__link" data-step="0"><span class="sidebar-tree__num">—</span> Repo &amp; Pages setup</a></li>
         <li class="sidebar-tree__item"><a href="#prereqs" class="sidebar-tree__link" data-step="1"><span class="sidebar-tree__num">1</span> Prerequisites</a></li>
         <li class="sidebar-tree__item"><a href="#step-splunk" class="sidebar-tree__link" data-step="2"><span class="sidebar-tree__num">2</span> Splunk token</a></li>
@@ -102,6 +103,101 @@
         <p class="muted">Local lab: <code>scripts/send-oci-metrics.py</code> replaces the Function. Lab files in <code>lab/</code>.</p>
       </section>
 
+      <section id="integration-comparison">
+        <h2>OCI Connector Hub vs Oracle DB direct receiver</h2>
+        <p>
+          Both paths land in Splunk Observability Cloud, but they answer different questions.
+          <strong>This lab</strong> covers OCI <em>platform</em> metrics (compute, networking, etc.) pushed from OCI Monitoring.
+          The <a href="https://garrett-splunk.github.io/Oracle-DB-Mon-Workshop/">Oracle DB Mon workshop</a> covers
+          <em>database</em> metrics by having the OTel Collector scrape the database directly with the
+          <code>oracledb</code> receiver.
+        </p>
+
+        <div class="flow-diagram" role="img" aria-label="Comparison of OCI vs Oracle DB integration paths">
+          <div class="flow-node">
+            <div class="flow-title">Path A — OCI (this lab)</div>
+            <div class="flow-sub">Monitoring → Connector Hub → Function</div>
+            <div class="flow-tags">
+              <span>/v2/datapoint</span>
+              <span>oci_computeagent</span>
+            </div>
+          </div>
+          <div class="flow-arrow">vs</div>
+          <div class="flow-node">
+            <div class="flow-title">Path B — Oracle DB</div>
+            <div class="flow-sub">Collector oracledb receiver → DB</div>
+            <div class="flow-tags">
+              <span>signalfx exporter</span>
+              <span>DB Monitoring OTLP</span>
+            </div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr><th></th><th>OCI Monitoring → Splunk (this lab)</th><th>Oracle DB → Collector → Splunk</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>What you monitor</strong></td>
+              <td>OCI cloud resources — compute instances, VCN, load balancers, Autonomous DB <em>service</em> metrics from OCI Monitoring namespaces</td>
+              <td>Inside the database — sessions, waits, tablespace, SQL performance, AWR-style stats from the DB instance itself</td>
+            </tr>
+            <tr>
+              <td><strong>Who produces metrics</strong></td>
+              <td>OCI Monitoring service (agents + control plane); you forward what OCI already emits</td>
+              <td>OTel Collector <code>oracledb</code> receiver queries the database on a schedule</td>
+            </tr>
+            <tr>
+              <td><strong>Middle tier</strong></td>
+              <td>OCI Connector Hub → OCI Function (transform + POST)</td>
+              <td>No OCI middle tier — collector connects straight to DB listener/port</td>
+            </tr>
+            <tr>
+              <td><strong>Network requirement</strong></td>
+              <td>Function or lab script needs outbound HTTPS to Splunk ingest; no DB port access required</td>
+              <td>Collector must reach Oracle DB (<code>host:1521</code> or scan); DB credentials + wallet if used</td>
+            </tr>
+            <tr>
+              <td><strong>Transform / mapping</strong></td>
+              <td>OCI JSON → Splunk <code>gauge</code> (<code>oci_namespace</code>, <code>oci_dim_*</code>)</td>
+              <td>Receiver maps Oracle views/stats → OTel metrics → <code>signalfx</code> or DB Monitoring OTLP</td>
+            </tr>
+            <tr>
+              <td><strong>Splunk ingest</strong></td>
+              <td><code>POST /v2/datapoint</code> with <code>X-SF-Token</code></td>
+              <td><code>signalfx</code> exporter and/or OTLP to DB Monitoring endpoints</td>
+            </tr>
+            <tr>
+              <td><strong>Typical dashboards</strong></td>
+              <td>Oracle Cloud Compute (<code>oci_computeagent</code>), OCI infrastructure views</td>
+              <td>Oracle DB Monitoring — sessions, waits, storage, query latency</td>
+            </tr>
+            <tr>
+              <td><strong>Local lab simulates</strong></td>
+              <td><code>send-oci-metrics.py</code> (Python, no Docker)</td>
+              <td>Docker Oracle DB + collector with <code>oracledb</code> receiver configured</td>
+            </tr>
+            <tr>
+              <td><strong>Workshop</strong></td>
+              <td><strong>This repo</strong></td>
+              <td><a href="https://garrett-splunk.github.io/Oracle-DB-Mon-Workshop/">Oracle DB Mon Workshop</a></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--info">
+          <p class="callout__title">When to use which</p>
+          <div class="callout__body">
+            <ul>
+              <li><strong>OCI path</strong> — You want unified cloud infrastructure metrics from Oracle Cloud (CPU on VMs, network bytes, LB requests) without installing agents on each host beyond OCI’s compute agent.</li>
+              <li><strong>DB receiver path</strong> — You need deep database telemetry (locks, waits, PGA, tablespace) and can place a collector where it can authenticate to the database.</li>
+              <li><strong>Both together</strong> — Common in production: OCI dashboards for the VM/autonomous service layer, DB Monitoring for query and session health. They are complementary, not interchangeable.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       <section id="repo-setup">
         <h2>How this repo is set up</h2>
         <p>
@@ -162,6 +258,11 @@
 
       <section id="prereqs">
         <h2>1 — Prerequisites</h2>
+        <p>
+          Before you start, read <a href="#integration-comparison">OCI vs DB receiver</a> if you are unsure whether this lab
+          or the <a href="https://garrett-splunk.github.io/Oracle-DB-Mon-Workshop/">Oracle DB Mon workshop</a> fits your use case.
+          This lab does <strong>not</strong> use the <code>oracledb</code> receiver — it simulates OCI Monitoring → Splunk ingest.
+        </p>
         <ul>
           <li>Python 3.9+ (metrics path — no Docker required)</li>
           <li>Splunk Observability Cloud <strong>ingest token</strong> with metrics ingest scope (Settings → Access Tokens)</li>
