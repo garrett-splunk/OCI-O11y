@@ -24,6 +24,17 @@ cd lab
 ./scripts/verify-o11y-metrics.sh
 ```
 
+## Oracle Cloud Compute dashboards
+
+Import `dashboards/dashboard_group_OCC.json`, then populate charts:
+
+```bash
+cd lab
+./scripts/fill-occ-dashboard.sh 20 30
+```
+
+See `lab/OCC_DASHBOARD.md` for OCI integration → Signalflow mapping.
+
 **Splunk filter:** `deployment.environment.name:oci-connector-lab`
 
 ## Repo layout
@@ -37,6 +48,8 @@ cd lab
 | `lab/lib/oci_metrics_transform.py` | Shared OCI → Splunk gauge mapping |
 | `lab/OCI_OPTIONAL.md` | Real OCI logs (Streaming) setup |
 | `lab/OCI_METRICS.md` | Real OCI metrics (Function) setup |
+| `lab/OCC_DASHBOARD.md` | OCC dashboard metric mapping + fill script |
+| `dashboards/dashboard_group_OCC.json` | Importable Oracle Cloud Compute dashboard group |
 | `WORKSHOP_GUIDE.md` | Facilitator guide |
 
 ## Teardown

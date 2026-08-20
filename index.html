@@ -46,8 +46,10 @@
         <li class="sidebar-tree__item"><a href="#step-verify" class="sidebar-tree__link" data-step="6"><span class="sidebar-tree__num">6</span> Verify logs in O11y</a></li>
         <li class="sidebar-tree__item"><a href="#step-metrics" class="sidebar-tree__link" data-step="7"><span class="sidebar-tree__num">7</span> OCI metrics</a></li>
         <li class="sidebar-tree__item"><a href="#step-metrics-verify" class="sidebar-tree__link" data-step="8"><span class="sidebar-tree__num">8</span> Verify metrics</a></li>
-        <li class="sidebar-tree__item"><a href="#step-oci" class="sidebar-tree__link" data-step="9"><span class="sidebar-tree__num">9</span> Optional OCI logs</a></li>
-        <li class="sidebar-tree__item"><a href="#step-production" class="sidebar-tree__link" data-step="10"><span class="sidebar-tree__num">10</span> Production gotchas</a></li>
+        <li class="sidebar-tree__item"><a href="#step-occ" class="sidebar-tree__link" data-step="9"><span class="sidebar-tree__num">9</span> OCC dashboards</a></li>
+        <li class="sidebar-tree__item"><a href="#quick-commands" class="sidebar-tree__link" data-step="0"><span class="sidebar-tree__num">⌘</span> All commands</a></li>
+        <li class="sidebar-tree__item"><a href="#step-oci" class="sidebar-tree__link" data-step="10"><span class="sidebar-tree__num">10</span> Optional OCI logs</a></li>
+        <li class="sidebar-tree__item"><a href="#step-production" class="sidebar-tree__link" data-step="11"><span class="sidebar-tree__num">11</span> Production gotchas</a></li>
         <li class="sidebar-tree__item"><a href="#troubleshoot" class="sidebar-tree__link" data-step="9"><span class="sidebar-tree__num">?</span> Troubleshooting</a></li>
         <li class="sidebar-tree__item"><a href="#teardown" class="sidebar-tree__link" data-step="10"><span class="sidebar-tree__num">—</span> Teardown</a></li>
       </ul>
@@ -299,13 +301,119 @@ service:
         </ol>
       </section>
 
+      <section id="step-occ">
+        <h2>9 — Oracle Cloud Compute (OCC) dashboards</h2>
+        <p>
+          Import <code>dashboards/dashboard_group_OCC.json</code> from this repo into Splunk Observability Cloud.
+          Charts expect <code>oci_computeagent</code> metrics with <code>oci_dim_*</code> dimensions — the same shape
+          OCI Connector Hub delivers when a Monitoring → Function connector runs
+          <code>lab/functions/oci-metrics-forwarder/func.py</code>.
+        </p>
+
+        <h3>How OCI metrics become dashboard data</h3>
+        <div class="flow-diagram" role="img" aria-label="OCI metrics to OCC dashboard flow">
+          <div class="flow-node">
+            <div class="flow-title">OCI Monitoring</div>
+            <div class="flow-sub">oci_computeagent on instances</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">
+            <div class="flow-title">Connector Hub</div>
+            <div class="flow-sub">Monitoring → Function</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">
+            <div class="flow-title">OCI Function</div>
+            <div class="flow-sub">OCI JSON → gauge</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">
+            <div class="flow-title">Splunk O11y</div>
+            <div class="flow-sub">/v2/datapoint</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">
+            <div class="flow-title">OCC dashboards</div>
+            <div class="flow-sub">Signalflow + oci_namespace filter</div>
+          </div>
+        </div>
+        <p class="muted">Local lab: <code>send-oci-metrics.py</code> uses the same transform as the Function (no OCI tenancy required).</p>
+
+        <h3>Fill dashboard charts</h3>
+        <div class="code-block">
+          <div class="code-block__head">
+            <span class="code-block__file">20 iterations × 30s (~10 min of counter deltas)</span>
+            <button type="button" class="btn-copy" data-copy="cmd-occ-fill">Copy</button>
+          </div>
+          <pre><code id="cmd-occ-fill">./scripts/fill-occ-dashboard.sh 20 30</code></pre>
+        </div>
+        <p>
+          Disk and network charts use Signalflow <code>.delta()</code>, so the script sends <strong>increasing counter values</strong>
+          on each iteration. CPU and memory gauges vary slightly so percentile charts move.
+        </p>
+
+        <h3>Metric mapping (OCI → Splunk → chart)</h3>
+        <table>
+          <thead>
+            <tr><th>OCI Monitoring</th><th>Splunk metric</th><th>OCC dashboard charts</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>namespace: oci_computeagent</code></td><td>dim <code>oci_namespace</code></td><td>All charts filter on this namespace</td></tr>
+            <tr><td><code>name: CpuUtilization</code></td><td><code>CpuUtilization</code></td><td>Top Instances, CPU %, Active Hosts, by shape/AD/image</td></tr>
+            <tr><td><code>name: MemoryUtilization</code></td><td><code>MemoryUtilization</code></td><td>Memory Used %</td></tr>
+            <tr><td><code>name: MemoryAllocationStalls</code></td><td><code>MemoryAllocationStalls</code></td><td>Memory Allocation Stalls</td></tr>
+            <tr><td><code>name: LoadAverage</code></td><td><code>LoadAverage</code></td><td>Load Average</td></tr>
+            <tr><td><code>name: DiskIopsRead</code> / <code>DiskIopsWritten</code></td><td>same</td><td>Disk Iops (<code>.delta()</code>)</td></tr>
+            <tr><td><code>name: DiskBytesRead</code> / <code>DiskBytesWritten</code></td><td>same</td><td>Disk I/O Bytes (<code>.delta()</code>)</td></tr>
+            <tr><td><code>name: NetworksBytesIn</code> / <code>NetworksBytesOut</code></td><td>same</td><td>Network Bytes In/Out, Top N lists</td></tr>
+            <tr><td><code>dimensions.resourceId</code> etc.</td><td><code>oci_dim_resourceId</code>, …</td><td>Instance drill-downs and dashboard variables</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--info">
+          <p class="callout__title">Import dashboards</p>
+          <div class="callout__body">
+            <p>Dashboards → Create dashboard group → Import JSON → select <code>dashboards/dashboard_group_OCC.json</code> from the repo clone. Set time range to <strong>Last 15 minutes</strong> while the fill script runs.</p>
+          </div>
+        </div>
+        <p>Full reference: <code>lab/OCC_DASHBOARD.md</code></p>
+      </section>
+
+      <section id="quick-commands">
+        <h2>All commands (copy-paste)</h2>
+        <div class="code-block">
+          <div class="code-block__head">
+            <span class="code-block__file">Full lab from clone</span>
+            <button type="button" class="btn-copy" data-copy="cmd-all">Copy</button>
+          </div>
+          <pre><code id="cmd-all">git clone https://github.com/garrett-splunk/OCI-O11y.git
+cd OCI-O11y/lab
+cp .env.splunk.example .env.splunk
+# Edit .env.splunk: SPLUNK_ACCESS_TOKEN, SPLUNK_REALM, SPLUNK_INGEST_URL
+
+# Logs path
+./scripts/start.sh
+./scripts/verify-stack.sh
+./scripts/produce-oci-logs.sh 10
+./scripts/verify-o11y-ingest.sh
+
+# Metrics + OCC dashboards
+./scripts/produce-oci-metrics.sh 5
+./scripts/verify-o11y-metrics.sh
+./scripts/fill-occ-dashboard.sh 20 30
+
+# Teardown
+./scripts/teardown-lab.sh</code></pre>
+        </div>
+      </section>
+
       <section id="step-oci">
-        <h2>9 — Optional: real OCI logs (Streaming)</h2>
+        <h2>10 — Optional: real OCI logs (Streaming)</h2>
         <p>See <code>lab/OCI_OPTIONAL.md</code> for Console steps: Logging → Connector Hub → Streaming → point collector at stream pool bootstrap + SASL.</p>
       </section>
 
       <section id="step-production">
-        <h2>10 — Production gotchas</h2>
+        <h2>11 — Production gotchas</h2>
         <table>
           <thead>
             <tr><th>Topic</th><th>Local lab</th><th>Real OCI Streaming</th></tr>

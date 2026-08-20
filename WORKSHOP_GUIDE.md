@@ -14,8 +14,9 @@
 | 6 | Log Observer | Verify logs filter |
 | 7 | `produce-oci-metrics.sh` | Simulated Monitoring metrics |
 | 8 | Metric Finder | Verify gauge metrics |
-| 9 | `OCI_OPTIONAL.md` / `OCI_METRICS.md` | Real OCI deploy paths |
-| 10 | Production gotchas | SASL, protocol 1.0, Function order |
+| 9 | `fill-occ-dashboard.sh` | Populate Oracle Cloud Compute dashboards |
+| 10 | `OCI_OPTIONAL.md` / `OCI_METRICS.md` | Real OCI deploy paths |
+| 11 | Production gotchas | SASL, protocol 1.0, Function order |
 
 ## Script reference
 
@@ -27,6 +28,7 @@
 | `scripts/verify-o11y-ingest.sh` | Step 6 | Log ingest verification |
 | `scripts/produce-oci-metrics.sh` | Step 7 | POST gauge datapoints to `/v2/datapoint` |
 | `scripts/verify-o11y-metrics.sh` | Step 8 | Metrics UI hints |
+| `scripts/fill-occ-dashboard.sh` | Step 9 | Loop OCC metrics for `.delta()` charts |
 | `scripts/teardown-lab.sh` | End | `docker compose down -v` |
 
 ## Teaching notes
@@ -99,14 +101,31 @@ Metric Finder: `VnicFromNetworkBytes`, filter `deployment.environment.name:oci-c
 
 Walk `OCI_METRICS.md`: deploy order, namespace `oci_vcn`, dimension mapping.
 
-### Part 5 — Optional OCI + gotchas (5 min)
+### Part 5 — OCC dashboards (10 min)
+
+Import `dashboards/dashboard_group_OCC.json` in O11y (Dashboards → Import).
+
+```bash
+./scripts/fill-occ-dashboard.sh 20 30
+```
+
+While the script runs, open **Oracle Cloud Compute** dashboards with time range **Last 15 minutes**.
+
+Explain the integration chain (see `lab/OCC_DASHBOARD.md`):
+
+1. OCI Monitoring emits `oci_computeagent` metrics on compute instances
+2. Connector Hub (Monitoring → Function) invokes the metrics forwarder
+3. Function POSTs Splunk `gauge` datapoints with `oci_namespace` and `oci_dim_*` dimensions
+4. OCC Signalflow charts filter `oci_namespace = oci_computeagent` and call `.delta()` on disk/network counters
+
+### Part 6 — Optional OCI + gotchas (5 min)
 
 Walk `OCI_OPTIONAL.md`: Connector Hub console flow, SASL username format, fresh consumer group, Lantern HEC vs this lab's O11y OTLP sink.
 
 ## One-liner cheat sheet
 
 ```bash
-cd lab && cp .env.splunk.example .env.splunk && ./scripts/start.sh && ./scripts/produce-oci-logs.sh 10 && ./scripts/produce-oci-metrics.sh 5
+cd lab && cp .env.splunk.example .env.splunk && ./scripts/start.sh && ./scripts/produce-oci-logs.sh 10 && ./scripts/produce-oci-metrics.sh 5 && ./scripts/fill-occ-dashboard.sh 20 30
 ```
 
 Filter: `deployment.environment.name:oci-connector-lab`
