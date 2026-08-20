@@ -1,43 +1,39 @@
-# Facilitator guide — OCI Connector Hub → O11y Cloud
+# Facilitator guide — OCI Metrics → O11y Cloud
 
-~45 minutes hands-on. Local Redpanda simulates OCI Streaming for **logs**; Python simulator mirrors the OCI **metrics** Function.
+~25 minutes hands-on. **Metrics-first** — Python simulator mirrors the OCI Function. Docker/Redpanda is optional (logs appendix only).
 
 ## Summary
 
 | Step | Artifact | Why |
 |------|----------|-----|
-| 1 | Prerequisites | Docker, Splunk ingest token |
-| 2 | `docker compose up` | Redpanda + collector (logs) |
-| 3 | `.env.splunk` | Realm + token + ingest URL |
-| 4 | `otelcol-config.yaml` | kafka receiver → otlphttp O11y logs |
-| 5 | `produce-oci-logs.sh` | Simulated log payloads |
-| 6 | Log Observer | Verify logs filter |
-| 7 | `produce-oci-metrics.sh` | Simulated Monitoring metrics |
-| 8 | Metric Finder | Verify gauge metrics |
-| 9 | `fill-occ-dashboard.sh` | Populate Oracle Cloud Compute dashboards |
-| 10 | `OCI_OPTIONAL.md` / `OCI_METRICS.md` | Real OCI deploy paths |
-| 11 | Production gotchas | SASL, protocol 1.0, Function order |
+| 1 | Prerequisites | Python 3, Splunk ingest token (metrics scope) |
+| 2 | `.env.splunk` | Realm + token + ingest URL (match US0/US1/etc.) |
+| 3 | `produce-oci-metrics.sh` | Simulated Monitoring metrics |
+| 4 | Metric Finder | Verify gauge metrics |
+| 5 | `fill-occ-dashboard.sh` | Populate Oracle Cloud Compute dashboards |
+| 6 | `OCI_METRICS.md` | Real OCI deploy path |
+| 7 | Production gotchas | Function order, namespace filters |
+| — | Logs appendix (optional) | Docker + collector; needs Splunk Cloud/Enterprise for Log Observer |
 
 ## Script reference
 
 | Script | When | What |
 |--------|------|------|
-| `scripts/start.sh` | Step 2 | `docker compose up -d`, wait for health |
-| `scripts/verify-stack.sh` | After start | Kafka topic + collector :13133 |
-| `scripts/produce-oci-logs.sh` | Step 5 | Publish OCI JSON to `oci-logs` |
-| `scripts/verify-o11y-ingest.sh` | Step 6 | Log ingest verification |
-| `scripts/produce-oci-metrics.sh` | Step 7 | POST gauge datapoints to `/v2/datapoint` |
-| `scripts/verify-o11y-metrics.sh` | Step 8 | Metrics UI hints |
-| `scripts/fill-occ-dashboard.sh` | Step 9 | Loop OCC metrics for `.delta()` charts |
-| `scripts/teardown-lab.sh` | End | `docker compose down -v` |
+| `scripts/metrics-lab.sh` | Main lab | Verify + fill OCC dashboards (no Docker) |
+| `scripts/produce-oci-metrics.sh` | Step 3 | POST gauge datapoints to `/v2/datapoint` |
+| `scripts/verify-o11y-metrics.sh` | Step 4 | Send samples + UI hints |
+| `scripts/fill-occ-dashboard.sh` | Step 5 | Loop OCC metrics for `.delta()` charts |
+| `scripts/start.sh` | Logs appendix | `docker compose up -d` |
+| `scripts/produce-oci-logs.sh` | Logs appendix | Publish OCI JSON to `oci-logs` |
+| `scripts/teardown-lab.sh` | End (if Docker used) | `docker compose down -v` |
 
 ## Teaching notes
 
-**Connector Hub vs Streaming vs collector**
+**Why metrics-first**
 
-- Connector Hub = managed fan-out inside OCI (Logging → Streaming, Monitoring → Object Storage, etc.)
-- OCI Streaming = Kafka 1.0-compatible buffer — you do not install brokers
-- Collector = standalone consumer (SOC4Kafka pattern) — runs anywhere with network access to the stream
+- Observability Cloud ingest tokens work for **metrics** (`/v2/datapoint`) on all orgs.
+- **Log Observer** for OCI logs typically requires a linked Splunk Cloud or Enterprise instance — many workshop attendees only have O11y metrics.
+- The metrics path matches production OCI Connector Hub (Monitoring → Function) without Docker.
 
 **Metrics path (Monitoring → Function)**
 
@@ -46,86 +42,55 @@
 - Deploy Function **before** creating the Service Connector
 - Local lab: `send-oci-metrics.py` uses the same transform as `functions/oci-metrics-forwarder/func.py`
 
-**Why OTLP on Splunk side (logs only)**
+**OCC dashboards**
 
-OCI does not offer Connector Hub → third-party OTLP. The OpenTelemetry export happens in the collector (`otlphttp` → `/v3/event`).
+- Charts filter `oci_namespace = oci_computeagent`
+- Use `fill-occ-dashboard.sh` not basic samples — basic fixtures use mixed namespaces (`oci_vcn`, etc.)
 
-**Contrast with other workshops**
+**Logs appendix (optional)**
 
-- Oracle DB lab: `oracledb` receiver scrapes the database directly
-- MQ-Rabbit-Kafka: `kafkametrics` scrapes broker metrics; not log fan-out from cloud control plane
+- OCI Logging → Connector Hub → Streaming → collector `kafka` receiver → `otlphttp` → `/v3/event`
+- Skip if attendees cannot access Log Observer
 
 ## Timed run-of-show
 
-### Part 1 — Start stack (5 min)
+### Part 1 — Credentials (5 min)
 
 ```bash
 cd lab
-cp .env.splunk.example .env.splunk   # facilitator token
-./scripts/start.sh
-./scripts/verify-stack.sh
+cp .env.splunk.example .env.splunk
+# facilitator token — confirm realm (e.g. us1)
 ```
 
-Expected: collector health on `:13133`, topic `oci-logs` exists.
-
-### Part 2 — Walk collector config (10 min)
-
-Open `lab/collector/otelcol-config.yaml`. Four blocks:
-
-1. `receivers.kafka` — topic `oci-logs`, `encoding: text`
-2. `processors.resource/oci_lab` — environment + `cloud.provider=oci`
-3. `exporters.otlphttp/o11y_logs` — `/v3/event` + `X-SF-Token`
-4. `service.pipelines.logs` — single logs pipeline
-
-Compare with `otelbin-examples/oci-production.yaml` for SASL + `protocol_version: "1.0.0"`.
-
-### Part 3 — Produce + verify (10 min)
-
-```bash
-./scripts/produce-oci-logs.sh 10 0.3
-./scripts/verify-o11y-ingest.sh
-```
-
-In O11y: **Log Observer** → Last 15 min → filter `deployment.environment.name:oci-connector-lab` → search `Connector Hub` or `compute`.
-
-Debug exporter in collector logs should show `log records: N`. 401 errors mean bad token — fix `.env.splunk` and `docker compose restart otel-collector`.
-
-### Part 4 — Metrics (10 min)
+### Part 2 — Metrics + mapping (10 min)
 
 ```bash
 ./scripts/produce-oci-metrics.sh 5
 ./scripts/verify-o11y-metrics.sh
 ```
 
-Metric Finder: `VnicFromNetworkBytes`, filter `deployment.environment.name:oci-connector-lab`.
+Walk transform: OCI `namespace` → `oci_namespace`, `dimensions.*` → `oci_dim_*`.
 
-Walk `OCI_METRICS.md`: deploy order, namespace `oci_vcn`, dimension mapping.
+Metric Finder: `CpuUtilization`, filter `oci_namespace:oci_computeagent`.
 
-### Part 5 — OCC dashboards (10 min)
+### Part 3 — OCC dashboards (10 min)
 
-Import `dashboards/dashboard_group_OCC.json` in O11y (Dashboards → Import).
+Import `dashboards/dashboard_group_OCC.json`.
 
 ```bash
 ./scripts/fill-occ-dashboard.sh 20 30
 ```
 
-While the script runs, open **Oracle Cloud Compute** dashboards with time range **Last 15 minutes**.
+While running: **Oracle Cloud Compute** dashboards, Last 15 minutes. Explain `.delta()` on disk/network counters.
 
-Explain the integration chain (see `lab/OCC_DASHBOARD.md`):
+### Part 4 — Real OCI + optional logs (5 min)
 
-1. OCI Monitoring emits `oci_computeagent` metrics on compute instances
-2. Connector Hub (Monitoring → Function) invokes the metrics forwarder
-3. Function POSTs Splunk `gauge` datapoints with `oci_namespace` and `oci_dim_*` dimensions
-4. OCC Signalflow charts filter `oci_namespace = oci_computeagent` and call `.delta()` on disk/network counters
-
-### Part 6 — Optional OCI + gotchas (5 min)
-
-Walk `OCI_OPTIONAL.md`: Connector Hub console flow, SASL username format, fresh consumer group, Lantern HEC vs this lab's O11y OTLP sink.
+Walk `OCI_METRICS.md` deploy order. Mention logs appendix only if org has Log Observer.
 
 ## One-liner cheat sheet
 
 ```bash
-cd lab && cp .env.splunk.example .env.splunk && ./scripts/start.sh && ./scripts/produce-oci-logs.sh 10 && ./scripts/produce-oci-metrics.sh 5 && ./scripts/fill-occ-dashboard.sh 20 30
+cd lab && cp .env.splunk.example .env.splunk && ./scripts/metrics-lab.sh 20 30
 ```
 
 Filter: `deployment.environment.name:oci-connector-lab`
@@ -134,7 +99,7 @@ Filter: `deployment.environment.name:oci-connector-lab`
 
 | Symptom | Fix |
 |---------|-----|
-| Collector won't start | Use collector **v0.155.0+** (kafka logs receiver); exporter is `otlphttp` not `otlp_http` |
-| 401 on export | Valid ingest token in `.env.splunk`; restart collector |
-| No logs in UI | Produce first; widen time range; remove filters; check debug exporter count |
-| `mapfile` error on Mac | Fixed — script uses rpk via docker |
+| HTTP 401 on metrics | Token + realm mismatch (US1 → `ingest.us1.signalfx.com`) |
+| Metrics in Finder, dashboards empty | Run `fill-occ-dashboard.sh`; import OCC JSON; Last 15 min |
+| No logs in Log Observer | Expected on O11y-only orgs — skip logs appendix |
+| Collector won't start | Logs appendix only; collector v0.155.0+ |

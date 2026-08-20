@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#FF007F" />
-  <title>OCI Connector Hub → O11y Cloud Lab</title>
+  <title>OCI Metrics → Splunk Observability Cloud Lab</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -17,7 +17,7 @@
     <div class="site-header__inner">
       <a class="brand" href="#overview">
         <span class="brand__mark">splunk&gt;</span>
-        <span class="brand__tag">oci connector lab</span>
+        <span class="brand__tag">oci metrics lab</span>
       </a>
       <div class="header-actions">
         <a class="header-doc-link" href="https://lantern.splunk.com/Platform_Data_Management/Unlock_Insights/Forwarding_OCI_Streaming_to_Splunk_with_Splunk_OpenTelemetry_Collector_for_Kafka" target="_blank" rel="noopener">Splunk Lantern</a>
@@ -39,71 +39,65 @@
         <li class="sidebar-tree__item"><a href="#overview" class="sidebar-tree__link" data-step="0"><span class="sidebar-tree__num">—</span> Overview</a></li>
         <li class="sidebar-tree__item"><a href="#related" class="sidebar-tree__link" data-step="0"><span class="sidebar-tree__num">—</span> Related labs</a></li>
         <li class="sidebar-tree__item"><a href="#prereqs" class="sidebar-tree__link" data-step="1"><span class="sidebar-tree__num">1</span> Prerequisites</a></li>
-        <li class="sidebar-tree__item"><a href="#step-stack" class="sidebar-tree__link" data-step="2"><span class="sidebar-tree__num">2</span> Start stack</a></li>
-        <li class="sidebar-tree__item"><a href="#step-splunk" class="sidebar-tree__link" data-step="3"><span class="sidebar-tree__num">3</span> Splunk token</a></li>
-        <li class="sidebar-tree__item"><a href="#step-collector" class="sidebar-tree__link" data-step="4"><span class="sidebar-tree__num">4</span> Wire collector</a></li>
-        <li class="sidebar-tree__item"><a href="#step-produce" class="sidebar-tree__link" data-step="5"><span class="sidebar-tree__num">5</span> Produce OCI logs</a></li>
-        <li class="sidebar-tree__item"><a href="#step-verify" class="sidebar-tree__link" data-step="6"><span class="sidebar-tree__num">6</span> Verify logs in O11y</a></li>
-        <li class="sidebar-tree__item"><a href="#step-metrics" class="sidebar-tree__link" data-step="7"><span class="sidebar-tree__num">7</span> OCI metrics</a></li>
-        <li class="sidebar-tree__item"><a href="#step-metrics-verify" class="sidebar-tree__link" data-step="8"><span class="sidebar-tree__num">8</span> Verify metrics</a></li>
-        <li class="sidebar-tree__item"><a href="#step-occ" class="sidebar-tree__link" data-step="9"><span class="sidebar-tree__num">9</span> OCC dashboards</a></li>
+        <li class="sidebar-tree__item"><a href="#step-splunk" class="sidebar-tree__link" data-step="2"><span class="sidebar-tree__num">2</span> Splunk token</a></li>
+        <li class="sidebar-tree__item"><a href="#step-metrics" class="sidebar-tree__link" data-step="3"><span class="sidebar-tree__num">3</span> Send OCI metrics</a></li>
+        <li class="sidebar-tree__item"><a href="#step-metrics-verify" class="sidebar-tree__link" data-step="4"><span class="sidebar-tree__num">4</span> Verify metrics</a></li>
+        <li class="sidebar-tree__item"><a href="#step-occ" class="sidebar-tree__link" data-step="5"><span class="sidebar-tree__num">5</span> OCC dashboards</a></li>
         <li class="sidebar-tree__item"><a href="#quick-commands" class="sidebar-tree__link" data-step="0"><span class="sidebar-tree__num">⌘</span> All commands</a></li>
-        <li class="sidebar-tree__item"><a href="#step-oci" class="sidebar-tree__link" data-step="10"><span class="sidebar-tree__num">10</span> Optional OCI logs</a></li>
-        <li class="sidebar-tree__item"><a href="#step-production" class="sidebar-tree__link" data-step="11"><span class="sidebar-tree__num">11</span> Production gotchas</a></li>
-        <li class="sidebar-tree__item"><a href="#troubleshoot" class="sidebar-tree__link" data-step="9"><span class="sidebar-tree__num">?</span> Troubleshooting</a></li>
-        <li class="sidebar-tree__item"><a href="#teardown" class="sidebar-tree__link" data-step="10"><span class="sidebar-tree__num">—</span> Teardown</a></li>
+        <li class="sidebar-tree__item"><a href="#appendix-logs" class="sidebar-tree__link" data-step="0"><span class="sidebar-tree__num">+</span> Optional: logs path</a></li>
+        <li class="sidebar-tree__item"><a href="#step-oci" class="sidebar-tree__link" data-step="6"><span class="sidebar-tree__num">6</span> Real OCI metrics</a></li>
+        <li class="sidebar-tree__item"><a href="#step-production" class="sidebar-tree__link" data-step="7"><span class="sidebar-tree__num">7</span> Production gotchas</a></li>
+        <li class="sidebar-tree__item"><a href="#troubleshoot" class="sidebar-tree__link" data-step="8"><span class="sidebar-tree__num">?</span> Troubleshooting</a></li>
+        <li class="sidebar-tree__item"><a href="#teardown" class="sidebar-tree__link" data-step="9"><span class="sidebar-tree__num">—</span> Teardown</a></li>
       </ul>
     </aside>
 
     <main class="prose" id="content">
       <header class="hero" id="overview">
-        <p class="eyebrow">Hands-on lab · ~35 minutes</p>
-        <h1>OCI Connector Hub → Splunk Observability Cloud</h1>
+        <p class="eyebrow">Hands-on lab · ~20 minutes · metrics only</p>
+        <h1>OCI Monitoring → Splunk Observability Cloud</h1>
         <p class="lead">
-          Two integration paths: <strong>logs</strong> via OCI Streaming + SOC4Kafka → <code>otlphttp</code>,
-          and <strong>metrics</strong> via OCI Monitoring + Function → <code>/v2/datapoint</code>.
-          Local Redpanda and Python simulators stand in for OCI services.
+          Learn how <strong>OCI Connector Hub</strong> forwards Monitoring metrics to Splunk via an OCI Function
+          and <code>/v2/datapoint</code> ingest. A local Python simulator sends the same payload shape — no Docker
+          or OCI tenancy required for the core lab.
         </p>
         <div class="callout callout--info">
-          <p class="callout__title">Key idea</p>
+          <p class="callout__title">Metrics-first lab</p>
           <div class="callout__body">
-            <p><strong>Connector Hub does not speak OTLP.</strong> OCI moves logs to Streaming; your collector consumes Kafka and exports OTLP to Splunk.</p>
+            <p>This workshop focuses on <strong>metrics and dashboards</strong>. Log ingest to Log Observer typically requires a linked <strong>Splunk Cloud or Enterprise</strong> instance; the optional logs appendix is kept for orgs that have that integration.</p>
           </div>
         </div>
       </header>
 
       <section>
-        <h2>Architecture</h2>
-        <div class="flow-diagram" role="img" aria-label="OCI to Splunk O11y data flow">
+        <h2>Architecture (metrics path)</h2>
+        <div class="flow-diagram" role="img" aria-label="OCI metrics to Splunk O11y data flow">
           <div class="flow-node">
-            <div class="flow-title">OCI Logging</div>
-            <div class="flow-sub">optional · real OCI</div>
+            <div class="flow-title">OCI Monitoring</div>
+            <div class="flow-sub">oci_computeagent · optional real OCI</div>
           </div>
           <div class="flow-arrow">→</div>
           <div class="flow-node">
             <div class="flow-title">Connector Hub</div>
-            <div class="flow-sub">Logging → Streaming</div>
+            <div class="flow-sub">Monitoring → Function</div>
           </div>
           <div class="flow-arrow">→</div>
           <div class="flow-node">
-            <div class="flow-title">Kafka stream</div>
-            <div class="flow-sub">Redpanda · topic oci-logs</div>
-          </div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-node">
-            <div class="flow-title">OTel Collector</div>
-            <div class="flow-sub">kafka receiver</div>
-            <div class="flow-tags">
-              <span>logs → otlphttp</span>
-            </div>
+            <div class="flow-title">OCI Function</div>
+            <div class="flow-sub">OCI JSON → gauge</div>
           </div>
           <div class="flow-arrow">→</div>
           <div class="flow-node">
             <div class="flow-title">Splunk O11y</div>
-            <div class="flow-sub">Log Observer</div>
+            <div class="flow-sub">/v2/datapoint</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">
+            <div class="flow-title">Dashboards</div>
+            <div class="flow-sub">Oracle Cloud Compute</div>
           </div>
         </div>
-        <p class="muted">Lab files: <code>lab/</code> in this repo</p>
+        <p class="muted">Local lab: <code>scripts/send-oci-metrics.py</code> replaces the Function. Lab files in <code>lab/</code>.</p>
       </section>
 
       <section id="related">
@@ -127,9 +121,9 @@
             </tr>
             <tr>
               <td><strong>This lab</strong></td>
-              <td>OCI platform logs via Streaming</td>
-              <td><code>kafka</code> (log consumer)</td>
-              <td><code>otlphttp</code> → O11y logs</td>
+              <td>OCI Monitoring metrics</td>
+              <td>Function / Python simulator</td>
+              <td><code>/v2/datapoint</code> → dashboards</td>
             </tr>
           </tbody>
         </table>
@@ -138,9 +132,10 @@
       <section id="prereqs">
         <h2>1 — Prerequisites</h2>
         <ul>
-          <li>Docker Desktop or Docker Engine + Compose v2</li>
-          <li>Splunk Observability Cloud <strong>ingest token</strong> (Organization Settings → Access Tokens)</li>
-          <li>Realm URLs matching your org (e.g. <code>us0</code>, <code>us1</code>, <code>eu0</code>)</li>
+          <li>Python 3.9+ (metrics path — no Docker required)</li>
+          <li>Splunk Observability Cloud <strong>ingest token</strong> with metrics ingest scope (Settings → Access Tokens)</li>
+          <li>Realm URLs matching your org (e.g. <code>us1</code> → <code>ingest.us1.signalfx.com</code>)</li>
+          <li>Optional: Docker — only if you run the <a href="#appendix-logs">logs appendix</a></li>
         </ul>
         <div class="code-block">
           <div class="code-block__head">
@@ -152,22 +147,9 @@ cd OCI-O11y/lab</code></pre>
         </div>
       </section>
 
-      <section id="step-stack">
-        <h2>2 — Start the local stack</h2>
-        <p>Redpanda provides a Kafka-compatible broker; the collector joins consumer group <code>oci-o11y-lab</code>.</p>
-        <div class="code-block">
-          <div class="code-block__head">
-            <span class="code-block__file">lab/scripts/start.sh</span>
-            <button type="button" class="btn-copy" data-copy="cmd-start">Copy</button>
-          </div>
-          <pre><code id="cmd-start">./scripts/start.sh
-./scripts/verify-stack.sh</code></pre>
-        </div>
-        <p>Collector health: <code>http://localhost:13133</code></p>
-      </section>
-
       <section id="step-splunk">
-        <h2>3 — Splunk credentials</h2>
+        <h2>2 — Splunk credentials</h2>
+        <p>Create <code>lab/.env.splunk</code> with your realm and ingest token. Match all URLs to your org (e.g. US1).</p>
         <div class="code-block">
           <div class="code-block__head">
             <span class="code-block__file">lab/.env.splunk</span>
@@ -175,89 +157,14 @@ cd OCI-O11y/lab</code></pre>
           </div>
           <pre><code id="cmd-splunk">cp .env.splunk.example .env.splunk
 # Edit SPLUNK_ACCESS_TOKEN, SPLUNK_REALM, SPLUNK_INGEST_URL
-docker compose restart otel-collector</code></pre>
-        </div>
-      </section>
-
-      <section id="step-collector">
-        <h2>4 — Wire the collector</h2>
-        <p>Config file: <code>lab/collector/otelcol-config.yaml</code> — SOC4Kafka pattern with O11y sink instead of HEC.</p>
-        <div class="code-block">
-          <div class="code-block__head">
-            <span class="code-block__file">collector/otelcol-config.yaml — core blocks</span>
-            <button type="button" class="btn-copy" data-copy="cmd-yaml">Copy</button>
-          </div>
-          <pre><code id="cmd-yaml">receivers:
-  kafka:
-    brokers: ["${env:KAFKA_BOOTSTRAP}"]
-    group_id: ${env:KAFKA_CONSUMER_GROUP}
-    logs:
-      topics: ["${env:KAFKA_TOPIC}"]
-      encoding: text
-
-processors:
-  resource/oci_lab:
-    attributes:
-      - key: deployment.environment.name
-        value: oci-connector-lab
-        action: upsert
-      - key: cloud.provider
-        value: oci
-        action: upsert
-
-exporters:
-  otlphttp/o11y_logs:
-    logs_endpoint: ${env:SPLUNK_INGEST_URL}/v3/event
-    headers:
-      X-SF-Token: ${env:SPLUNK_ACCESS_TOKEN}
-
-service:
-  pipelines:
-    logs:
-      receivers: [kafka]
-      processors: [memory_limiter, resource/oci_lab, batch]
-      exporters: [otlphttp/o11y_logs]</code></pre>
-        </div>
-        <p>Production variant with SASL: <code>collector/otelbin-examples/oci-production.yaml</code></p>
-      </section>
-
-      <section id="step-produce">
-        <h2>5 — Produce OCI-style logs</h2>
-        <p>Simulates records that Connector Hub would write to OCI Streaming — sample payloads in <code>fixtures/oci-log-samples.jsonl</code>.</p>
-        <div class="code-block">
-          <div class="code-block__head">
-            <span class="code-block__file">Produce 10 messages</span>
-            <button type="button" class="btn-copy" data-copy="cmd-produce">Copy</button>
-          </div>
-          <pre><code id="cmd-produce">./scripts/produce-oci-logs.sh 10 0.3</code></pre>
-        </div>
-      </section>
-
-      <section id="step-verify">
-        <h2>6 — Verify in Observability Cloud</h2>
-        <div class="code-block">
-          <div class="code-block__head">
-            <span class="code-block__file">lab/scripts/verify-o11y-ingest.sh</span>
-            <button type="button" class="btn-copy" data-copy="cmd-verify">Copy</button>
-          </div>
-          <pre><code id="cmd-verify">./scripts/verify-o11y-ingest.sh</code></pre>
-        </div>
-        <ol>
-          <li>Open <strong>Log Observer</strong> (or Logs)</li>
-          <li>Time range: <strong>Last 15 minutes</strong></li>
-          <li>Filter: <code>deployment.environment.name:oci-connector-lab</code></li>
-          <li>Search: <code>Connector Hub</code> or <code>compute</code></li>
-        </ol>
-        <div class="callout callout--warn">
-          <p class="callout__title">Metric Explorer filter field</p>
-          <div class="callout__body">
-            <p>Use <code>deployment.environment.name</code> (with <code>.name</code>) in Log Observer filters when the UI requires it.</p>
-          </div>
+# Example for US1:
+# SPLUNK_REALM=us1
+# SPLUNK_INGEST_URL=https://ingest.us1.signalfx.com</code></pre>
         </div>
       </section>
 
       <section id="step-metrics">
-        <h2>7 — OCI Monitoring metrics</h2>
+        <h2>3 — Send OCI Monitoring metrics</h2>
         <p>
           Production path: <strong>Connector Hub (Monitoring → Function)</strong> transforms OCI metric payloads
           and POSTs Splunk <code>gauge</code> datapoints. Locally, the same transform runs in
@@ -269,6 +176,13 @@ service:
             <button type="button" class="btn-copy" data-copy="cmd-metrics">Copy</button>
           </div>
           <pre><code id="cmd-metrics">./scripts/produce-oci-metrics.sh 5</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-block__head">
+            <span class="code-block__file">Metrics-only lab (verify + fill dashboards)</span>
+            <button type="button" class="btn-copy" data-copy="cmd-metrics-lab">Copy</button>
+          </div>
+          <pre><code id="cmd-metrics-lab">./scripts/metrics-lab.sh 20 30</code></pre>
         </div>
         <p>See <code>lab/OCI_METRICS.md</code> for Function deploy and Service Connector (Monitoring → Function) steps.</p>
         <table>
@@ -285,7 +199,7 @@ service:
       </section>
 
       <section id="step-metrics-verify">
-        <h2>8 — Verify metrics in O11y</h2>
+        <h2>4 — Verify metrics in O11y</h2>
         <div class="code-block">
           <div class="code-block__head">
             <span class="code-block__file">lab/scripts/verify-o11y-metrics.sh</span>
@@ -295,14 +209,14 @@ service:
         </div>
         <ol>
           <li>Open <strong>Metric Finder</strong> or chart builder</li>
-          <li>Search: <code>VnicFromNetworkBytes</code>, <code>CpuUtilization</code>, or <code>HttpRequests</code></li>
+          <li>Search: <code>CpuUtilization</code> with filter <code>oci_namespace:oci_computeagent</code></li>
           <li>Filter: <code>deployment.environment.name:oci-connector-lab</code></li>
           <li>Group by: <code>oci_namespace</code> or <code>oci_dim_resourceId</code></li>
         </ol>
       </section>
 
       <section id="step-occ">
-        <h2>9 — Oracle Cloud Compute (OCC) dashboards</h2>
+        <h2>5 — Oracle Cloud Compute (OCC) dashboards</h2>
         <p>
           Import <code>dashboards/dashboard_group_OCC.json</code> from this repo into Splunk Observability Cloud.
           Charts expect <code>oci_computeagent</code> metrics with <code>oci_dim_*</code> dimensions — the same shape
@@ -391,39 +305,70 @@ cd OCI-O11y/lab
 cp .env.splunk.example .env.splunk
 # Edit .env.splunk: SPLUNK_ACCESS_TOKEN, SPLUNK_REALM, SPLUNK_INGEST_URL
 
-# Logs path
-./scripts/start.sh
-./scripts/verify-stack.sh
-./scripts/produce-oci-logs.sh 10
-./scripts/verify-o11y-ingest.sh
-
-# Metrics + OCC dashboards
+# Metrics-only path (no Docker)
 ./scripts/produce-oci-metrics.sh 5
 ./scripts/verify-o11y-metrics.sh
 ./scripts/fill-occ-dashboard.sh 20 30
 
-# Teardown
-./scripts/teardown-lab.sh</code></pre>
+# Or run the combined metrics lab script:
+# ./scripts/metrics-lab.sh 20 30</code></pre>
         </div>
       </section>
 
+      <section id="appendix-logs">
+        <h2>Optional appendix — OCI logs via Streaming</h2>
+        <div class="callout callout--warn">
+          <p class="callout__title">Requires Splunk Cloud or Enterprise for Log Observer</p>
+          <div class="callout__body">
+            <p>Many O11y-only orgs cannot view ingested logs in Log Observer without a linked Splunk Cloud or Enterprise instance. Skip this section if you only have Observability Cloud metrics. The logs path is kept for reference and for orgs with full log integration.</p>
+          </div>
+        </div>
+        <p>Production path: OCI Logging → Connector Hub → OCI Streaming → OTel Collector (<code>kafka</code> receiver) → <code>otlphttp</code> → <code>/v3/event</code>.</p>
+
+        <h3>A1 — Start the local stack</h3>
+        <div class="code-block">
+          <div class="code-block__head">
+            <span class="code-block__file">Requires Docker</span>
+            <button type="button" class="btn-copy" data-copy="cmd-start">Copy</button>
+          </div>
+          <pre><code id="cmd-start">./scripts/start.sh
+./scripts/verify-stack.sh
+docker compose restart otel-collector</code></pre>
+        </div>
+
+        <h3>A2 — Wire the collector</h3>
+        <p>Config: <code>lab/collector/otelcol-config.yaml</code>. Production SASL variant: <code>collector/otelbin-examples/oci-production.yaml</code>.</p>
+
+        <h3>A3 — Produce and verify logs</h3>
+        <div class="code-block">
+          <div class="code-block__head">
+            <span class="code-block__file">Produce OCI-style logs</span>
+            <button type="button" class="btn-copy" data-copy="cmd-produce">Copy</button>
+          </div>
+          <pre><code id="cmd-produce">./scripts/produce-oci-logs.sh 10 0.3
+./scripts/verify-o11y-ingest.sh</code></pre>
+        </div>
+        <p>Real OCI setup: <code>lab/OCI_OPTIONAL.md</code>. Lantern reference uses HEC; this lab uses O11y OTLP (<code>/v3/event</code>).</p>
+      </section>
+
       <section id="step-oci">
-        <h2>10 — Optional: real OCI logs (Streaming)</h2>
-        <p>See <code>lab/OCI_OPTIONAL.md</code> for Console steps: Logging → Connector Hub → Streaming → point collector at stream pool bootstrap + SASL.</p>
+        <h2>6 — Real OCI metrics (production)</h2>
+        <p>See <code>lab/OCI_METRICS.md</code> for Connector Hub (Monitoring → Function), deploy order, and the forwarder in <code>lab/functions/oci-metrics-forwarder/</code>.</p>
       </section>
 
       <section id="step-production">
-        <h2>11 — Production gotchas</h2>
+        <h2>7 — Production gotchas</h2>
         <table>
           <thead>
-            <tr><th>Topic</th><th>Local lab</th><th>Real OCI Streaming</th></tr>
+            <tr><th>Topic</th><th>Metrics path</th><th>Logs path (optional)</th></tr>
           </thead>
           <tbody>
-            <tr><td>Auth</td><td>PLAINTEXT</td><td><code>SASL_SSL</code> + OCI auth token</td></tr>
-            <tr><td>Protocol</td><td>Default OK</td><td><code>protocol_version: "1.0.0"</code> required</td></tr>
-            <tr><td>SASL username</td><td>n/a</td><td>4-part if identity domain enabled</td></tr>
-            <tr><td>Consumer group</td><td><code>oci-o11y-lab</code></td><td>Use fresh name; avoid poisoned groups</td></tr>
-            <tr><td>Sink</td><td><code>otlphttp</code> → O11y</td><td>Lantern doc uses HEC — this lab is O11y-only</td></tr>
+            <tr><td>Connector Hub source</td><td>Monitoring</td><td>Logging</td></tr>
+            <tr><td>Connector Hub target</td><td>Function</td><td>Streaming (Kafka)</td></tr>
+            <tr><td>Splunk ingest</td><td><code>/v2/datapoint</code></td><td><code>/v3/event</code> via collector</td></tr>
+            <tr><td>Deploy order</td><td>Function before Service Connector</td><td>Stream pool before Connector Hub</td></tr>
+            <tr><td>Auth (real OCI)</td><td>Function resource principal</td><td><code>SASL_SSL</code> + auth token; <code>protocol_version: "1.0.0"</code></td></tr>
+            <tr><td>Log UI</td><td>n/a</td><td>Log Observer needs Splunk Cloud/Enterprise link</td></tr>
           </tbody>
         </table>
       </section>
@@ -431,25 +376,27 @@ cp .env.splunk.example .env.splunk
       <section id="troubleshoot">
         <h2>Troubleshooting</h2>
         <details>
-          <summary>Collector fails to start</summary>
+          <summary>HTTP 401 on metric export</summary>
+          <p>Fix <code>SPLUNK_ACCESS_TOKEN</code> in <code>.env.splunk</code>. Ensure realm matches (US1 token → <code>ingest.us1.signalfx.com</code>, not <code>us0</code>).</p>
+        </details>
+        <details>
+          <summary>Metrics in Finder but OCC dashboards empty</summary>
+          <p>Run <code>./scripts/fill-occ-dashboard.sh 20 30</code> (needs <code>oci_computeagent</code> fixtures). Import <code>dashboards/dashboard_group_OCC.json</code>. Set time range to Last 15 minutes.</p>
+        </details>
+        <details>
+          <summary>No logs in Log Observer</summary>
+          <p>Expected if your org has O11y metrics only. Log Observer requires Splunk Cloud or Enterprise integration. Skip the <a href="#appendix-logs">logs appendix</a>.</p>
+        </details>
+        <details>
+          <summary>Collector fails to start (logs appendix only)</summary>
           <p>Use collector <strong>v0.155.0+</strong> for kafka <code>logs</code> receiver. Exporter type is <code>otlphttp</code> (not <code>otlp_http</code>).</p>
-        </details>
-        <details>
-          <summary>HTTP 401 on export</summary>
-          <p>Fix <code>SPLUNK_ACCESS_TOKEN</code> in <code>.env.splunk</code>, then <code>docker compose restart otel-collector</code>.</p>
-        </details>
-        <details>
-          <summary>Debug shows logs but UI empty</summary>
-          <p>Widen time range; try filter without dimensions first; confirm token has log ingest scope.</p>
-        </details>
-        <details>
-          <summary>No messages consumed</summary>
-          <p>Run <code>./scripts/produce-oci-logs.sh</code> after collector is healthy. Check <code>docker compose logs otel-collector</code> for kafka consumer group join.</p>
         </details>
       </section>
 
       <section id="teardown">
         <h2>Teardown</h2>
+        <p>Metrics-only: stop any running <code>fill-occ-dashboard.sh</code> with Ctrl+C. No containers to remove.</p>
+        <p>If you started the logs appendix:</p>
         <div class="code-block">
           <div class="code-block__head">
             <span class="code-block__file">Stop and remove volumes</span>
