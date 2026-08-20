@@ -3,7 +3,7 @@
 **Primary path:** Connector Hub → OCI Function → `/v2/datapoint` → Metric Finder & dashboards  
 **Optional:** Logs via Streaming + OTel Collector (requires Splunk Cloud/Enterprise for Log Observer)
 
-**Workshop site:** [https://garrett-splunk.github.io/OCI-O11y/](https://garrett-splunk.github.io/OCI-O11y/)
+**Splunk reference:** [oci-monitoring-metrics-to-splunk-observability-python](https://github.com/splunk/oracle-cloud-examples-splunk-observability/tree/master/samples/oci-monitoring-metrics-to-splunk-observability-python) (`splunk/oracle-cloud-examples-splunk-observability`)
 
 ## Quick start — metrics only (no Docker)
 
@@ -47,7 +47,6 @@ See `lab/OCI_OPTIONAL.md`.
 
 | Path | Purpose |
 |------|---------|
-| `index.html` | GitHub Pages workshop guide (metrics-first) |
 | `lab/scripts/metrics-lab.sh` | Metrics-only lab (no Docker) |
 | `lab/scripts/fill-occ-dashboard.sh` | Populate OCC dashboard charts |
 | `lab/functions/oci-metrics-forwarder/` | OCI Function for Monitoring metrics |

@@ -20,6 +20,7 @@
         <span class="brand__tag">oci metrics lab</span>
       </a>
       <div class="header-actions">
+        <a class="header-doc-link" href="https://github.com/splunk/oracle-cloud-examples-splunk-observability/tree/master/samples/oci-monitoring-metrics-to-splunk-observability-python" target="_blank" rel="noopener">Splunk reference</a>
         <a class="header-doc-link" href="https://lantern.splunk.com/Platform_Data_Management/Unlock_Insights/Forwarding_OCI_Streaming_to_Splunk_with_Splunk_OpenTelemetry_Collector_for_Kafka" target="_blank" rel="noopener">Splunk Lantern</a>
         <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
           <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -38,7 +39,6 @@
       <ul class="sidebar-tree">
         <li class="sidebar-tree__item"><a href="#overview" class="sidebar-tree__link" data-step="0"><span class="sidebar-tree__num">—</span> Overview</a></li>
         <li class="sidebar-tree__item"><a href="#integration-comparison" class="sidebar-tree__link" data-step="0"><span class="sidebar-tree__num">—</span> OCI vs DB receiver</a></li>
-        <li class="sidebar-tree__item"><a href="#repo-setup" class="sidebar-tree__link" data-step="0"><span class="sidebar-tree__num">—</span> Repo &amp; Pages setup</a></li>
         <li class="sidebar-tree__item"><a href="#prereqs" class="sidebar-tree__link" data-step="1"><span class="sidebar-tree__num">1</span> Prerequisites</a></li>
         <li class="sidebar-tree__item"><a href="#step-splunk" class="sidebar-tree__link" data-step="2"><span class="sidebar-tree__num">2</span> Splunk O11y token</a></li>
         <li class="sidebar-tree__item"><a href="#step-metrics" class="sidebar-tree__link" data-step="3"><span class="sidebar-tree__num">3</span> Send OCI metrics</a></li>
@@ -68,6 +68,14 @@
           <p class="callout__title">Metrics-first lab</p>
           <div class="callout__body">
             <p>This workshop focuses on <strong>metrics and dashboards in Splunk O11y</strong> (our internal shorthand for Splunk Observability Cloud). Log ingest to Log Observer typically requires a linked <strong>Splunk Cloud or Enterprise</strong> instance; the optional logs appendix is kept for orgs that have that integration.</p>
+          </div>
+        </div>
+        <div class="callout callout--tip">
+          <p class="callout__title">Official Splunk reference</p>
+          <div class="callout__body">
+            <p>Production Function pattern and sample code from Splunk:
+              <a href="https://github.com/splunk/oracle-cloud-examples-splunk-observability/tree/master/samples/oci-monitoring-metrics-to-splunk-observability-python" target="_blank" rel="noopener">oci-monitoring-metrics-to-splunk-observability-python</a>
+              (<code>splunk/oracle-cloud-examples-splunk-observability</code>). This lab’s transform and forwarder mirror that sample; local scripts let you exercise the same ingest without an OCI tenancy.</p>
           </div>
         </div>
       </header>
@@ -194,64 +202,6 @@
               <li><strong>DB receiver path</strong> — You need deep database telemetry (locks, waits, PGA, tablespace) and can place a collector where it can authenticate to the database.</li>
               <li><strong>Both together</strong> — Common in production: OCI dashboards for the VM/autonomous service layer, DB Monitoring for query and session health. They are complementary, not interchangeable.</li>
             </ul>
-          </div>
-        </div>
-      </section>
-
-      <section id="repo-setup">
-        <h2>How this repo is set up</h2>
-        <p>
-          This project has two parts: a <strong>static workshop site</strong> (what you are reading on GitHub Pages)
-          and a <strong>hands-on lab</strong> under <code>lab/</code> that you clone and run locally against your Splunk O11y org.
-          The site does not run the lab for you — it documents the steps; your machine sends metrics with Python scripts.
-        </p>
-
-        <h3>GitHub Pages (workshop site)</h3>
-        <p>Live URL: <a href="https://garrett-splunk.github.io/OCI-O11y/">https://garrett-splunk.github.io/OCI-O11y/</a></p>
-        <table>
-          <thead>
-            <tr><th>Piece</th><th>Path</th><th>Purpose</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Workshop page</td><td><code>index.html</code></td><td>Step-by-step guide (this page)</td></tr>
-            <tr><td>Styles</td><td><code>styles.css</code></td><td>Layout, theme, code blocks</td></tr>
-            <tr><td>Interactivity</td><td><code>app.js</code></td><td>Sidebar progress, copy buttons, TOC, dark mode</td></tr>
-            <tr><td>Pages deploy</td><td><code>.github/workflows/pages.yml</code></td><td>On push to <code>main</code>, uploads repo root as static site</td></tr>
-          </tbody>
-        </table>
-        <p>
-          Pages serves the <strong>repository root</strong> as static files. No build step — edit <code>index.html</code>,
-          push to <code>main</code>, and the workflow redeploys automatically. Enable Pages once in the repo:
-          <strong>Settings → Pages → Source: GitHub Actions</strong>.
-        </p>
-
-        <h3>Lab artifacts (run locally after clone)</h3>
-        <table>
-          <thead>
-            <tr><th>Piece</th><th>Path</th><th>Purpose</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Credentials</td><td><code>lab/.env.splunk</code></td><td>Your ingest token + realm (gitignored; copy from <code>.env.splunk.example</code>)</td></tr>
-            <tr><td>Metric transform</td><td><code>lab/lib/oci_metrics_transform.py</code></td><td>OCI JSON → Splunk O11y <code>gauge</code> (shared with OCI Function)</td></tr>
-            <tr><td>Local sender</td><td><code>lab/scripts/send-oci-metrics.py</code></td><td>POST to <code>/v2/datapoint</code></td></tr>
-            <tr><td>OCC fixtures</td><td><code>lab/fixtures/oci-occ-dashboard-metrics.jsonl</code></td><td>Sample <code>oci_computeagent</code> metrics for dashboards</td></tr>
-            <tr><td>Dashboard import</td><td><code>dashboards/dashboard_group_OCC.json</code></td><td>Import into O11y UI (not used by Pages)</td></tr>
-            <tr><td>OCI Function (prod)</td><td><code>lab/functions/oci-metrics-forwarder/</code></td><td>Deploy to OCI for real Connector Hub flow</td></tr>
-            <tr><td>Docs</td><td><code>lab/OCI_METRICS.md</code>, <code>lab/OCC_DASHBOARD.md</code></td><td>Production deploy + dashboard mapping</td></tr>
-            <tr><td>Logs appendix</td><td><code>lab/docker-compose.yml</code>, <code>lab/collector/</code></td><td>Optional Docker stack for Streaming → collector path</td></tr>
-          </tbody>
-        </table>
-
-        <div class="callout callout--info">
-          <p class="callout__title">What you need to run the lab</p>
-          <div class="callout__body">
-            <ul>
-              <li><strong>Git clone</strong> — <code>git clone https://github.com/garrett-splunk/OCI-O11y.git</code></li>
-              <li><strong>Python 3</strong> — metrics scripts (no Docker for core lab)</li>
-              <li><strong>Splunk O11y ingest token</strong> — in <code>lab/.env.splunk</code></li>
-              <li><strong>Splunk O11y UI</strong> — Metric Finder + import <code>dashboards/dashboard_group_OCC.json</code></li>
-            </ul>
-            <p class="muted">GitHub Pages hosts the guide only. Metrics are sent from your laptop to Splunk O11y ingest, not through GitHub.</p>
           </div>
         </div>
       </section>
@@ -633,7 +583,15 @@ docker compose restart otel-collector</code></pre>
 
       <section id="step-oci">
         <h2>6 — Real OCI metrics (production)</h2>
-        <p>See <code>lab/OCI_METRICS.md</code> for Connector Hub (Monitoring → Function), deploy order, and the forwarder in <code>lab/functions/oci-metrics-forwarder/</code>.</p>
+        <p>
+          See <code>lab/OCI_METRICS.md</code> for Connector Hub (Monitoring → Function), deploy order, and the forwarder in
+          <code>lab/functions/oci-metrics-forwarder/</code>.
+        </p>
+        <p>
+          <strong>Splunk reference implementation:</strong>
+          <a href="https://github.com/splunk/oracle-cloud-examples-splunk-observability/tree/master/samples/oci-monitoring-metrics-to-splunk-observability-python" target="_blank" rel="noopener">oci-monitoring-metrics-to-splunk-observability-python</a>
+          in <code>splunk/oracle-cloud-examples-splunk-observability</code> — use alongside this lab when deploying the Function in a real OCI tenancy.
+        </p>
       </section>
 
       <section id="step-production">

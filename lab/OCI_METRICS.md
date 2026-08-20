@@ -2,6 +2,8 @@
 
 Two paths: **production** (Connector Hub → OCI Function) and **local lab** (fixture simulator).
 
+**Splunk reference:** [oci-monitoring-metrics-to-splunk-observability-python](https://github.com/splunk/oracle-cloud-examples-splunk-observability/tree/master/samples/oci-monitoring-metrics-to-splunk-observability-python)
+
 ## Production architecture
 
 ```
@@ -90,4 +92,4 @@ cd lab
 | Consumer | OTel `kafka` receiver | Function → REST API |
 | Splunk O11y sink | `otlphttp` `/v3/event` | `/v2/datapoint` gauge |
 
-Reference: [Oracle — Exporting OCI Monitoring Metrics to Splunk O11y](https://github.com/oracle-samples) (workshop pattern).
+Reference: [Splunk — oci-monitoring-metrics-to-splunk-observability-python](https://github.com/splunk/oracle-cloud-examples-splunk-observability/tree/master/samples/oci-monitoring-metrics-to-splunk-observability-python) (official sample; this lab’s Function and transform follow the same pattern).

@@ -15,7 +15,9 @@ cp .env.splunk.example .env.splunk   # set SPLUNK_ACCESS_TOKEN + SPLUNK_INGEST_U
 ./scripts/fill-occ-dashboard.sh 20 30
 ```
 
-Import the dashboard group in Observability Cloud: **Dashboards → Create dashboard group → Import JSON** and select `dashboards/dashboard_group_OCC.json`.
+Import the dashboard group in Splunk O11y: **Dashboards → Create dashboard group → Import JSON** and select `dashboards/dashboard_group_OCC.json`.
+
+**Splunk reference:** [oci-monitoring-metrics-to-splunk-observability-python](https://github.com/splunk/oracle-cloud-examples-splunk-observability/tree/master/samples/oci-monitoring-metrics-to-splunk-observability-python)
 
 ## How metrics reach Splunk O11y (OCI integration)
 
